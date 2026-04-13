@@ -1,22 +1,22 @@
 ## Restore Notes
 
-This repository was restored from Personality Lab work that originally lived inside an OpenClaw review checkout.
+TraitMixer was restored from unfinished Personality Lab work that originally lived inside an OpenClaw review checkout.
 
-What is here:
-- the OpenClaw-derived source tree needed to continue the feature
-- the restored `docs/personality-lab/` notes
-- the personality compiler, config schema, and UI panel work already in progress
+What was preserved:
+- the personality compiler
+- the config schema and types
+- the UI panel and preview work
+- the supporting docs for the feature
 
-What is not here:
-- git history from the old checkout
-- bulky build artifacts and installed dependencies like `node_modules/` and `dist/`
+What was intentionally not preserved:
+- original git history
+- build artifacts and installed dependencies
 
-Important paths for the feature:
-- `docs/personality-lab/`
-- `src/agents/personality-overlay.ts`
-- `src/config/types.personality.ts`
-- `src/config/zod-schema.personality.ts`
-- `ui/src/ui/views/agents-panels-personality.ts`
+Why the repo still feels bigger than the feature:
+- this is a rescue extraction, not a fully isolated standalone app yet
+- some inherited OpenClaw files still exist because they provide context or wiring for the restored feature
 
-Suggested next step:
-- install deps and continue extracting this into a cleaner standalone app if that is still the goal
+If you are resuming implementation, read these first:
+- `README.md`
+- `docs/personality-lab/ARCHITECTURE.md`
+- `docs/personality-lab/REPO_MAP.md`

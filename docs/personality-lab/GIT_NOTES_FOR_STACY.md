@@ -9,14 +9,14 @@ status: draft
 
 # Git Notes for Stacy
 
-This repo is a fork. Treat the fork as the working surface and upstream as the source of truth for anything you want to pull forward.
+This repo is now the restored working surface for TraitMixer. It came out of OpenClaw work, but it should be treated as its own project.
 
-## Fork vs upstream
+## TraitMixer vs inherited OpenClaw code
 
-- Make changes here in the fork.
-- Treat upstream as the reference for feature shape and long-term direction.
-- Compare against upstream before you assume a local file is canonical.
-- Pull upstream ideas across intentionally instead of blending them in by accident.
+- Make changes here.
+- Treat the inherited OpenClaw structure as source material, not as the product identity.
+- Pull ideas across intentionally instead of dragging unrelated platform behavior along by accident.
+- When in doubt, prefer making TraitMixer easier to understand over preserving legacy shape.
 
 ## Branch expectations
 
