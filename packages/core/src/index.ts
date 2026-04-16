@@ -6,4 +6,4 @@ export {
   resolvePersonalityConfig,
   resolveEffectivePersonalityConfig,
 } from "./compiler.js";
-export type { TraitMixerConfig } from "./compiler.js";
+export type { TraitMixerConfig } from "./types.js";
