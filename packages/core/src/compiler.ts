@@ -1,302 +1,126 @@
-import type {
-  PersonalityChannelOverrideConfig,
-  PersonalityConfig,
-} from "./types.js";
-
-/**
- * Narrow config type replacing the monolithic OpenClawConfig.
- * Only declares what the compiler actually reads.
- */
-export type TraitMixerConfig = {
-  agents?: {
-    defaults?: {
-      personality?: PersonalityConfig;
-    };
-    list?: Array<{
-      id?: string;
-      personality?: PersonalityConfig;
-      [key: string]: unknown;
-    }>;
-  };
-};
-
-type ResolvedChannelOverride = {
-  channel: string;
-  override: PersonalityChannelOverrideConfig;
-};
-
-const CHANNEL_OVERRIDE_PART_ORDER = ["tone", "directness", "verbosity", "responseStyle"] as const;
+import type { PersonalityConfig, PersonalityTraits, TraitMixerConfig } from "./types.js";
 
 function compactObject<T extends Record<string, unknown>>(value: T | undefined): T | undefined {
-  if (!value) {
-    return undefined;
-  }
-  const entries = Object.entries(value).filter(([, entryValue]) => entryValue !== undefined);
-  if (entries.length === 0) {
-    return undefined;
-  }
+  if (!value) return undefined;
+  const entries = Object.entries(value).filter(([, v]) => v !== undefined);
+  if (entries.length === 0) return undefined;
   return Object.fromEntries(entries) as T;
 }
 
-function mergeChannelMaps(
-  base?: PersonalityConfig["channels"],
-  override?: PersonalityConfig["channels"],
-): PersonalityConfig["channels"] {
-  const mergedByNormalized = new Map<
-    string,
-    { key: string; value: PersonalityChannelOverrideConfig }
-  >();
-
-  const applyEntries = (
-    source: PersonalityConfig["channels"] | undefined,
-    preferSourceKey: boolean,
-  ) => {
-    if (!source) {
-      return;
-    }
-    for (const [rawKey, rawValue] of Object.entries(source)) {
-      const key = rawKey.trim();
-      if (!key) {
-        continue;
-      }
-      const value = compactObject(rawValue);
-      if (!value) {
-        continue;
-      }
-      const normalized = key.toLowerCase();
-      const previous = mergedByNormalized.get(normalized);
-      mergedByNormalized.set(normalized, {
-        key: preferSourceKey || !previous ? key : previous.key,
-        value: compactObject({ ...previous?.value, ...value }) ?? {},
-      });
-    }
-  };
-
-  applyEntries(base, false);
-  applyEntries(override, true);
-
-  const entries = Array.from(mergedByNormalized.values()).toSorted((a, b) =>
-    a.key.localeCompare(b.key),
-  );
-  if (entries.length === 0) {
-    return undefined;
-  }
-  return Object.fromEntries(entries.map((entry) => [entry.key, entry.value]));
-}
-
-function mergePersonalityConfigs(
-  base?: PersonalityConfig,
-  override?: PersonalityConfig,
-): PersonalityConfig | undefined {
-  const style = compactObject({ ...base?.style, ...override?.style });
-  const authority = compactObject({ ...base?.authority, ...override?.authority });
-  const guardrails = compactObject({ ...base?.guardrails, ...override?.guardrails });
-  const channels = mergeChannelMaps(base?.channels, override?.channels);
-  const enabled = override?.enabled ?? base?.enabled;
-
-  if (
-    enabled === undefined &&
-    !style &&
-    !authority &&
-    !guardrails &&
-    (!channels || Object.keys(channels).length === 0)
-  ) {
-    return undefined;
-  }
-
-  return compactObject({
-    enabled,
-    style,
-    authority,
-    channels,
-    guardrails,
-  });
+function mergeTraits(base?: PersonalityTraits, override?: Partial<PersonalityTraits>): PersonalityTraits | undefined {
+  return compactObject({ ...base, ...override });
 }
 
 export function resolvePersonalityConfig(
   cfg?: TraitMixerConfig,
   agentId?: string,
-  _runtimeChannel?: string,
 ): PersonalityConfig | undefined {
-  if (!cfg) {
-    return undefined;
-  }
+  if (!cfg) return undefined;
   const defaults = cfg.agents?.defaults?.personality;
-  const normalizedAgentId = agentId?.trim().toLowerCase();
-  const perAgent =
-    normalizedAgentId && Array.isArray(cfg.agents?.list)
-      ? cfg.agents.list.find(
-          (entry) =>
-            entry &&
-            typeof entry === "object" &&
-            typeof entry.id === "string" &&
-            entry.id.trim().toLowerCase() === normalizedAgentId,
-        )?.personality
-      : undefined;
-  const merged = mergePersonalityConfigs(defaults, perAgent);
-  if (!merged || merged.enabled === false) {
-    return undefined;
+  const list = cfg.agents?.list;
+  const agent = agentId && list ? list.find((a) => a.id?.toLowerCase() === agentId.toLowerCase())?.personality : undefined;
+
+  const enabled = agent?.enabled ?? defaults?.enabled;
+  const traits = mergeTraits(defaults?.traits, agent?.traits);
+  
+  let channels: Record<string, Partial<PersonalityTraits>> | undefined = undefined;
+  if (defaults?.channels || agent?.channels) {
+    channels = {};
+    const allKeys = new Set([...Object.keys(defaults?.channels || {}), ...Object.keys(agent?.channels || {})]);
+    for (const key of allKeys) {
+      channels[key] = { ...(defaults?.channels?.[key] || {}), ...((agent?.channels?.[key] || {}) as any) };
+    }
   }
-  return merged;
+
+  if (enabled === false || (!traits && !channels)) return undefined;
+
+  return compactObject({ enabled, traits, channels });
 }
 
 export const resolveEffectivePersonalityConfig = resolvePersonalityConfig;
 
-function resolveChannelOverride(params: {
-  channels?: PersonalityConfig["channels"];
-  runtimeChannel?: string;
-}): ResolvedChannelOverride | undefined {
-  const runtimeChannel = params.runtimeChannel?.trim().toLowerCase();
-  if (!runtimeChannel || !params.channels) {
-    return undefined;
-  }
-  const entries = Object.entries(params.channels).toSorted(([left], [right]) =>
-    left.localeCompare(right),
-  );
-  for (const [channel, override] of entries) {
-    if (channel.trim().toLowerCase() !== runtimeChannel) {
-      continue;
-    }
-    const compacted = compactObject(override);
-    if (!compacted) {
-      return undefined;
-    }
-    return { channel, override: compacted };
-  }
-  return undefined;
+function resolveChannelOverride(
+  personality: PersonalityConfig,
+  channel?: string
+): PersonalityTraits | undefined {
+  if (!channel || !personality.channels) return undefined;
+  return personality.channels[channel.toLowerCase()];
 }
 
-function buildBehaviorLines(params: {
-  personality: PersonalityConfig;
-  channelOverride?: ResolvedChannelOverride;
-}): string[] {
-  const lines: string[] = [];
-  const style = params.personality.style;
-  const authority = params.personality.authority;
-  const override = params.channelOverride?.override;
-
-  const communicationParts: string[] = [];
-  const tone = override?.tone ?? style?.tone;
-  const directness = override?.directness ?? style?.directness;
-  const verbosity = override?.verbosity ?? style?.verbosity;
-  if (tone) {
-    communicationParts.push(`tone=${tone}`);
-  }
-  if (directness) {
-    communicationParts.push(`directness=${directness}`);
-  }
-  if (verbosity) {
-    communicationParts.push(`verbosity=${verbosity}`);
-  }
-  if (communicationParts.length > 0) {
-    lines.push(`- Communication: ${communicationParts.join(", ")}.`);
-  }
-  if (style?.humor) {
-    lines.push(`- Humor: ${style.humor}.`);
-  }
-  if (style?.formality) {
-    lines.push(`- Formality: ${style.formality}.`);
-  }
-
-  const authorityParts: string[] = [];
-  if (authority?.stance) {
-    authorityParts.push(`stance=${authority.stance}`);
-  }
-  if (authority?.confidence) {
-    authorityParts.push(`confidence=${authority.confidence}`);
-  }
-  if (authority?.pushback) {
-    authorityParts.push(`pushback=${authority.pushback}`);
-  }
-  if (authorityParts.length > 0) {
-    lines.push(`- Authority: ${authorityParts.join(", ")}.`);
-  }
-
-  if (params.channelOverride) {
-    const channelParts: string[] = [];
-    for (const field of CHANNEL_OVERRIDE_PART_ORDER) {
-      const value = params.channelOverride.override[field];
-      if (!value) {
-        continue;
-      }
-      channelParts.push(`${field}=${value}`);
-    }
-    if (channelParts.length > 0) {
-      lines.push(
-        `- Channel override (${params.channelOverride.channel}): ${channelParts.join(", ")}.`,
-      );
-    }
-  }
-
-  return lines;
-}
-
-function buildGuardrailLines(personality: PersonalityConfig): string[] {
-  const guardrails = personality.guardrails;
-  if (!guardrails) {
-    return [];
-  }
-  const lines: string[] = [];
-  if (guardrails.truthfulness) {
-    lines.push(`- Truthfulness: ${guardrails.truthfulness}.`);
-  }
-  if (guardrails.uncertainty) {
-    lines.push(`- Uncertainty handling: ${guardrails.uncertainty}.`);
-  }
-  if (guardrails.corrections) {
-    lines.push(`- Correction style: ${guardrails.corrections}.`);
-  }
-  return lines;
-}
-
-type PersonalityOverlayCompileInput =
-  | PersonalityConfig
-  | {
-      personality?: PersonalityConfig;
-      runtimeChannel?: string;
-    }
-  | undefined;
-
-function isCompileOptionsObject(
-  value: PersonalityOverlayCompileInput,
-): value is { personality?: PersonalityConfig; runtimeChannel?: string } {
-  return Boolean(value) && typeof value === "object" && "personality" in value;
+function interpretSlider(name: string, value: number, labels: [string, string, string]): string {
+  let label = labels[1];
+  if (value < 33) label = labels[0];
+  if (value >= 67) label = labels[2];
+  return `- ${name}: ${value}% (${label})`;
 }
 
 export function compilePersonalityOverlay(
-  input?: PersonalityOverlayCompileInput,
-  options?: { channel?: string },
+  input?: PersonalityConfig | { personality?: PersonalityConfig; runtimeChannel?: string },
+  options?: { channel?: string }
 ): string | undefined {
-  const personality = isCompileOptionsObject(input) ? input.personality : input;
-  const runtimeChannel = isCompileOptionsObject(input) ? input.runtimeChannel : options?.channel;
-  if (!personality || personality.enabled === false) {
-    return undefined;
+  const isWrapped = input && typeof input === "object" && "personality" in input;
+  const personality = isWrapped ? (input as any).personality : input;
+  const runtimeChannel = isWrapped ? (input as any).runtimeChannel : options?.channel;
+
+  if (!personality || personality.enabled === false) return undefined;
+
+  const override = resolveChannelOverride(personality, runtimeChannel);
+  const effectiveTraits = mergeTraits(personality.traits, override);
+
+  if (!effectiveTraits || Object.keys(effectiveTraits).length === 0) return undefined;
+
+  const lines: string[] = ["### Personality & Tone Mixer Settings"];
+  
+  if (effectiveTraits.humor !== undefined) {
+    lines.push(interpretSlider("Humor", effectiveTraits.humor, ["Serious/Dry", "Lighthearted", "Hilarious/Playful"]));
+  }
+  if (effectiveTraits.flirting !== undefined) {
+    lines.push(interpretSlider("Flirting", effectiveTraits.flirting, ["Strictly Professional", "Friendly", "Shamelessly Flirty/Sexy"]));
+  }
+  if (effectiveTraits.sarcasm !== undefined) {
+    lines.push(interpretSlider("Sarcasm", effectiveTraits.sarcasm, ["Earnest/Sincere", "Occasional Snark", "Bitingly Sarcastic"]));
+  }
+  if (effectiveTraits.optimism !== undefined) {
+    lines.push(interpretSlider("Optimism", effectiveTraits.optimism, ["Cynical/Pessimistic", "Realistic/Balanced", "Highly Optimistic"]));
+  }
+  if (effectiveTraits.directness !== undefined) {
+    lines.push(interpretSlider("Directness", effectiveTraits.directness, ["Soft/Polite", "Clear/Balanced", "Brutally Blunt"]));
+  }
+  if (effectiveTraits.verbosity !== undefined) {
+    lines.push(interpretSlider("Verbosity", effectiveTraits.verbosity, ["Extremely Brief", "Moderately Detailed", "Very Chatty/Verbose"]));
+  }
+  if (effectiveTraits.confidence !== undefined) {
+    lines.push(interpretSlider("Confidence", effectiveTraits.confidence, ["Timid/Unsure", "Confident/Assertive", "Arrogant/Cocky"]));
+  }
+  if (effectiveTraits.empathy !== undefined) {
+    lines.push(interpretSlider("Empathy", effectiveTraits.empathy, ["Cold/Robotic", "Friendly", "Warm/Nurturing"]));
+  }
+  if (effectiveTraits.complexity !== undefined) {
+    lines.push(interpretSlider("Complexity", effectiveTraits.complexity, ["Layman/Simple", "Professional", "Academic/Jargon"]));
+  }
+  if (effectiveTraits.creativity !== undefined) {
+    lines.push(interpretSlider("Creativity", effectiveTraits.creativity, ["Strict/Literal", "Flexible", "Poetic/Abstract"]));
+  }
+  if (effectiveTraits.caution !== undefined) {
+    lines.push(interpretSlider("Caution", effectiveTraits.caution, ["Reckless/Bold", "Careful", "Paranoid/Safe"]));
+  }
+  if (effectiveTraits.formality !== undefined) {
+    lines.push(interpretSlider("Formality", effectiveTraits.formality, ["Street Slang", "Casual", "Stiff/Formal"]));
+  }
+  if (effectiveTraits.rating !== undefined) {
+    let ratingStr = "PG-13";
+    if (effectiveTraits.rating <= 25) ratingStr = "G (Strictly Family Friendly)";
+    else if (effectiveTraits.rating <= 50) ratingStr = "PG (General Audience)";
+    else if (effectiveTraits.rating <= 75) ratingStr = "R (Mature, Profanity allowed)";
+    else ratingStr = "XXX (Unrestricted, NSFW, Explicit allowed)";
+    lines.push(`- Content Rating: ${effectiveTraits.rating}% (${ratingStr})`);
   }
 
-  const channelOverride = resolveChannelOverride({
-    channels: personality.channels,
-    runtimeChannel,
-  });
-  const behaviorLines = buildBehaviorLines({
-    personality,
-    channelOverride,
-  });
-  const guardrailLines = buildGuardrailLines(personality);
+  if (lines.length === 1) return undefined;
 
-  if (behaviorLines.length === 0 && guardrailLines.length === 0) {
-    return undefined;
-  }
+  lines.push("");
+  lines.push("INSTRUCTION: Adopt the above personality traits strictly. The percentages indicate the intensity of each trait on a scale from 0 to 100.");
 
-  const lines: string[] = [];
-  if (behaviorLines.length > 0) {
-    lines.push("### Behavior", ...behaviorLines);
-  }
-  if (guardrailLines.length > 0) {
-    if (lines.length > 0) {
-      lines.push("");
-    }
-    lines.push("### Truth & Integrity Guardrails", ...guardrailLines);
-  }
   return lines.join("\n");
 }
 

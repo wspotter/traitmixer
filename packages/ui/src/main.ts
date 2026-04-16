@@ -6,23 +6,15 @@ const DEMO_CONFIG = {
   agents: {
     defaults: {
       personality: {
-        style: {
-          tone: "warm" as const,
-          directness: "balanced" as const,
-          verbosity: "balanced" as const,
-          humor: "light" as const,
-          formality: "casual" as const,
-        },
-        authority: {
-          stance: "advisor" as const,
-          confidence: "assertive" as const,
-          pushback: "medium" as const,
-        },
-        guardrails: {
-          truthfulness: "strict" as const,
-          uncertainty: "explicit" as const,
-          corrections: "gentle" as const,
-        },
+        traits: {
+          humor: 50,
+          flirting: 0,
+          sarcasm: 10,
+          optimism: 60,
+          directness: 80,
+          verbosity: 40,
+          confidence: 70
+        }
       },
     },
     list: [
@@ -31,15 +23,13 @@ const DEMO_CONFIG = {
         personality: {
           channels: {
             signal: {
-              tone: "playful" as const,
-              verbosity: "brief" as const,
-              responseStyle: "plain" as const,
+              humor: 80,
+              verbosity: 20
             },
             dashboard: {
-              tone: "neutral" as const,
-              directness: "direct" as const,
-              verbosity: "brief" as const,
-              responseStyle: "structured" as const,
+              humor: 0,
+              directness: 100,
+              verbosity: 10
             },
           },
         },

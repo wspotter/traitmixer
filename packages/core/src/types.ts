@@ -1,49 +1,36 @@
-export type PersonalityTone = "neutral" | "warm" | "playful" | "dry" | "formal";
-
-export type PersonalityDirectness = "soft" | "balanced" | "direct";
-
-export type PersonalityVerbosity = "brief" | "balanced" | "detailed";
-
-export type PersonalityHumor = "off" | "light" | "dry" | "playful";
-
-export type PersonalityFormality = "casual" | "neutral" | "formal";
-
-export type PersonalityResponseStyle = "plain" | "structured" | "bullet-first";
-
-export type PersonalityStyleConfig = {
-  tone?: PersonalityTone;
-  directness?: PersonalityDirectness;
-  verbosity?: PersonalityVerbosity;
-  humor?: PersonalityHumor;
-  formality?: PersonalityFormality;
-};
-
-export type PersonalityAuthorityConfig = {
-  stance?: "collaborative" | "advisor" | "operator";
-  confidence?: "cautious" | "balanced" | "assertive";
-  pushback?: "low" | "medium" | "high";
-};
-
-export type PersonalityChannelOverrideConfig = {
-  tone?: PersonalityTone;
-  directness?: PersonalityDirectness;
-  verbosity?: PersonalityVerbosity;
-  responseStyle?: PersonalityResponseStyle;
-};
-
-export type PersonalityGuardrailsConfig = {
-  truthfulness?: "strict" | "balanced";
-  uncertainty?: "explicit" | "brief";
-  corrections?: "direct" | "gentle";
+export type PersonalityTraits = {
+  humor?: number;       // 0-100
+  flirting?: number;    // 0-100
+  optimism?: number;    // 0-100
+  directness?: number;  // 0-100
+  sarcasm?: number;     // 0-100
+  confidence?: number;  // 0-100
+  empathy?: number;     // 0-100
+  complexity?: number;  // 0-100
+  creativity?: number;  // 0-100
+  caution?: number;     // 0-100
+  formality?: number;   // 0-100
+  verbosity?: number;   // 0-100
+  rating?: number;      // 0-100
 };
 
 export type PersonalityConfig = {
   enabled?: boolean;
-  style?: PersonalityStyleConfig;
-  authority?: PersonalityAuthorityConfig;
-  channels?: Record<string, PersonalityChannelOverrideConfig>;
-  guardrails?: PersonalityGuardrailsConfig;
+  traits?: PersonalityTraits;
+  channels?: Record<string, Partial<PersonalityTraits>>;
 };
 
-// Backward-compatible alias for clearer call-site intent.
+export type TraitMixerConfig = {
+  agents?: {
+    defaults?: {
+      personality?: PersonalityConfig;
+    };
+    list?: Array<{
+      id?: string;
+      personality?: PersonalityConfig;
+      [key: string]: unknown;
+    }>;
+  };
+};
+
 export type AgentPersonalityConfig = PersonalityConfig;
