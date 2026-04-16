@@ -1,0 +1,16 @@
+{
+  "name": "traitmixer-core",
+  "version": "0.1.0",
+  "type": "module",
+  "main": "src/index.ts",
+  "dependencies": {
+    "zod": "^3.24.0"
+  },
+  "devDependencies": {
+    "vitest": "^4.1.0",
+    "typescript": "^5.8.0"
+  },
+  "scripts": {
+    "test": "vitest run"
+  }
+}

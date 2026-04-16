@@ -8,11 +8,8 @@
     "skipLibCheck": true,
     "outDir": "dist",
     "declaration": true,
-    "declarationMap": true,
-    "sourceMap": true
+    "sourceMap": true,
+    "rootDir": "src"
   },
-  "references": [
-    { "path": "packages/core" },
-    { "path": "packages/ui" }
-  ]
+  "include": ["src"]
 }

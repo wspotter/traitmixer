@@ -4,7 +4,7 @@ summary: "MVP notes for the Personality Lab prompt pipeline and UI"
 read_when:
   - You need a quick mental model of how the Personality Lab MVP is wired
   - You are changing prompts, config, or the operator-facing UI
-status: draft
+status: current
 ---
 
 # Personality Lab Architecture
@@ -13,7 +13,7 @@ The Personality Lab MVP is a small loop with a narrow job: let an operator edit 
 
 ## What changed
 
-Personality Lab is no longer just “some personality text in a box.” The MVP now centers on a compiled personality overlay that:
+Personality Lab is no longer just "some personality text in a box." The MVP now centers on a compiled personality overlay that:
 
 - merges `agents.defaults.personality` with per-agent personality
 - lets channel-specific overrides adjust delivery without rewriting the core voice
@@ -66,20 +66,19 @@ The UI should not become a second configuration system. If a setting matters, it
 
 ## Preview and test
 
-Use the UI package scripts when you want to inspect the feature locally:
+Use the workspace scripts to inspect the feature locally:
 
-- `pnpm ui:dev` - run the Personality Lab UI in development mode.
-- `pnpm ui:build` - build the UI the same way the shipped bundle is built.
-- `pnpm --dir ui preview` - preview the built UI bundle.
-- `pnpm test:ui` - run the UI test path after linting the UI boundary check.
-
-If the UI dependencies are missing, the root `ui` wrapper installs them before running the requested action. That keeps the preview loop boring, which is the best kind of boring.
+- `pnpm dev` - run the mixer board UI in development mode.
+- `pnpm build` - build the UI for production.
+- `pnpm test` - run all tests (compiler + UI).
+- `pnpm test:core` - run only compiler tests.
+- `pnpm test:ui` - run only UI tests.
 
 ## Future path
 
 The MVP should be easy to split into either of these later:
 
-- **Standalone app** - the lab becomes its own product with its own storage and compiler service.
-- **Plugin** - the lab becomes a package or extension that plugs into OpenClaw without changing the core model.
+- **Standalone service** - the lab becomes its own product with its own storage and compiler service.
+- **Plugin** - the lab becomes a package or extension that plugs into other platforms.
 
 The main design rule for that future is simple: keep the compiler core independent from the UI. If the prompt compiler can run without the screen, we can move it almost anywhere later.

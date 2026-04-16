@@ -2,23 +2,17 @@
 
 TraitMixer was restored from unfinished Personality Lab work that originally lived inside an OpenClaw review checkout.
 
-This repo is now the canonical home for TraitMixer. It is maintained as its own project, even where inherited OpenClaw-era code still exists in the tree.
+This repo is now the canonical home for TraitMixer. It is maintained as its own project with all OpenClaw platform dependencies removed.
 
 What was preserved:
-- the personality compiler
-- the config schema and types
-- the UI panel and preview work
-- the supporting docs for the feature
+- the personality compiler (now `packages/core/src/compiler.ts`)
+- the config schema and types (now `packages/core/src/types.ts` and `schema.ts`)
+- the UI panel and preview work (now `packages/ui/src/personality-panel.ts`)
+- the supporting docs for the feature (still in `docs/personality-lab/`)
 
 What was intentionally not preserved:
 - original git history
 - build artifacts and installed dependencies
+- all OpenClaw platform infrastructure (89 channel plugins, gateway, CLI, Docker configs)
 
-Why the repo still feels bigger than the feature:
-- this is a rescue extraction, not a fully isolated standalone app yet
-- some inherited OpenClaw files still exist because they provide context or wiring for the restored feature
-
-If you are resuming implementation, read these first:
-- `README.md`
-- `docs/personality-lab/ARCHITECTURE.md`
-- `docs/personality-lab/REPO_MAP.md`
+The `pre-trim` branch contains the full extracted repo before cleanup for reference.
