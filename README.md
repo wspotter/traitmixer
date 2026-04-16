@@ -10,6 +10,15 @@ Think of it like an audio mixer, but for assistant behavior:
 
 This repository was restored from unfinished OpenClaw Personality Lab work. It is not a clean-room standalone app yet, but it now has a clear home and a focused purpose.
 
+## Ownership
+
+TraitMixer is its own repo and its own working product surface.
+
+- This repository is the canonical home for TraitMixer work.
+- The current codebase is maintained here as TraitMixer, not as a mirror of `openclaw/openclaw`.
+- Some code and wiring were restored from unfinished OpenClaw Personality Lab work, and that provenance should remain documented.
+- Ongoing product decisions, cleanup, and new implementation happen in this repo.
+
 ## What Exists Today
 
 - A structured personality schema with validation.

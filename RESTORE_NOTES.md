@@ -2,6 +2,8 @@
 
 TraitMixer was restored from unfinished Personality Lab work that originally lived inside an OpenClaw review checkout.
 
+This repo is now the canonical home for TraitMixer. It is maintained as its own project, even where inherited OpenClaw-era code still exists in the tree.
+
 What was preserved:
 - the personality compiler
 - the config schema and types
