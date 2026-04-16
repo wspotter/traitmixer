@@ -1,0 +1,15 @@
+{
+  "name": "traitmixer-connectors",
+  "version": "0.1.0",
+  "type": "module",
+  "main": "src/index.ts",
+  "dependencies": {
+    "traitmixer-core": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "^5.8.0"
+  },
+  "scripts": {
+    "test": "echo 'no tests yet'"
+  }
+}

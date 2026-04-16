@@ -6,7 +6,9 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "dev": "pnpm --filter traitmixer-ui dev",
+    "dev": "pnpm --filter traitmixer-ui dev & pnpm --filter traitmixer-server dev & wait",
+    "dev:ui": "pnpm --filter traitmixer-ui dev",
+    "dev:server": "pnpm --filter traitmixer-server dev",
     "build": "pnpm --filter traitmixer-ui build",
     "test": "pnpm -r test",
     "test:core": "pnpm --filter traitmixer-core test",
