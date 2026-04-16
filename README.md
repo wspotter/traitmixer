@@ -16,15 +16,21 @@ Use this when your agent works correctly but its written responses are hard to r
 
 Same prompt:
 
-> Tell a builder why TraitMixer matters in one short reply.
+> I need an excuse to get out of dinner with my friends tonight.
 
-Without TraitMixer:
+**Without TraitMixer (Default LLM vibe):**
 
-> TraitMixer is a helpful tool for adjusting AI assistant personalities and improving how they communicate across different scenarios.
+> Here are a few options you can use:
+> 1. "I'm feeling a bit under the weather and need to rest."
+> 2. "I had something urgent come up at home."
 
-With TraitMixer:
+**With TraitMixer (Sarcasm 90%, Directness 100%):**
 
-> TraitMixer gives builders a direct way to shape agent persona, so response style can be tuned visually instead of buried inside prompt edits.
+> "I don't want to go." Alternatively, lie and tell them you have a migraine. It's unprovable and nobody argues with it.
+
+**With TraitMixer (Empathy 100%, Verbosity 80%):**
+
+> It's completely normal to just need a night to yourself sometimes! You could gently tell them, "I was really looking forward to seeing you all, but I'm thoroughly wiped out and need to recharge on the couch." A true friend will absolutely understand that you need to protect your peace.
 
 ## Supported targets
 
