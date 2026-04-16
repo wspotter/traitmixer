@@ -1,10 +1,10 @@
 # TraitMixer
 
-**Mix the voice. Keep the brains.**
+**Persona Mixing Made Easy**
 
-TraitMixer is an open-source personality mixer for AI agents. It gives you a visual control surface for text-response traits like tone, directness, humor, empathy, formality, safety, and per-channel delivery, then compiles those choices into a deterministic prompt overlay you can actually ship.
+TraitMixer is an open-source personality mixer for AI agents. It provides a visual control surface for text-response traits like tone, directness, humor, empathy, formality, safety, and per-channel delivery, then compiles those choices into a deterministic prompt overlay.
 
-If your agents are capable but their text replies still sound generic, brittle, too polite, too stiff, too chatty, or wrong for the room, this is the repo.
+TraitMixer is built for agent workflows where the underlying system is capable, but the written responses still feel generic, brittle, too stiff, too chatty, or wrong for the context.
 
 ![TraitMixer UI](docs/screenshot.png)
 
@@ -18,18 +18,18 @@ Most prompt tuning is still a pile of invisible text edits and wishful thinking.
 
 TraitMixer makes personality work legible:
 
-- You can see the voice you are shaping.
-- You can vary behavior by channel without rewriting the whole system prompt.
-- You can preview the compiled output before you push it into a real stack.
-- You can keep the runtime layer deterministic instead of hand-tuning magic strings forever.
+- The active persona can be seen instead of inferred from prompt text alone.
+- Behavior can vary by channel without rewriting the whole system prompt.
+- The compiled output can be previewed before it is pushed into a real stack.
+- The runtime layer stays deterministic instead of drifting through hand-tuned prompt edits.
 
-The goal is simple: make agent voice control feel more like mixing audio and less like arguing with a haunted Markdown file.
+The goal is simple: make agent persona control feel more like mixing a board and less like editing invisible prompt fragments.
 
 ## What makes it interesting
 
 - **Deterministic compiler**: same inputs produce the same overlay.
 - **Channel overrides**: different delivery for `signal`, `dashboard`, support flows, launch copy, or whatever else you need.
-- **Visual mixer UI**: sliders are faster to understand, easier to demo, and frankly more fun than raw prompt surgery.
+- **Visual mixer UI**: sliders make persona changes faster to understand and easier to compare.
 - **Connector layer**: push compiled overlays into the platforms people already use.
 - **Git-friendly config**: personality inputs live in plain files instead of being trapped in UI state.
 
@@ -47,7 +47,7 @@ Before:
 
 After TraitMixer:
 
-> TraitMixer gives you an actual control surface for agent personality, so you're not stuck doing blind prompt surgery every time the bot sounds weird in public.
+> TraitMixer gives builders a direct way to shape agent persona, so response style can be tuned visually instead of buried inside prompt edits.
 
 That is the whole pitch in miniature: same job, better written delivery.
 
@@ -106,16 +106,7 @@ That separation matters. The compiler should be usable without the screen, and t
 
 ## The pitch in one sentence
 
-TraitMixer is for people who already have an AI agent working and are tired of it sounding like the same vacuum-sealed assistant every other stack ships.
-
-## What would make this repo worth starring
-
-- It solves a real, easy-to-recognize problem.
-- The concept is screenshot-friendly and demo-friendly.
-- It is weird enough to be memorable without being useless.
-- It can turn into a plugin, hosted product, or consulting wedge later.
-
-That last part matters. Stars are nice. A repo people can imagine using in production is better.
+TraitMixer helps agent builders tune written persona visually, preview the result, and push it into the tools they already run.
 
 ## Configuration
 
@@ -125,7 +116,7 @@ TraitMixer reads personality config from plain data structures and compiles a pr
 - per-agent trait overrides
 - per-channel delivery overrides
 
-For Claude Code specifically, point `TRAITMIXER_CLAUDECODE_PATH` at the project memory file you want TraitMixer to manage, for example:
+For Claude Code specifically, point `TRAITMIXER_CLAUDECODE_PATH` at the project memory file TraitMixer should manage, for example:
 
 - `~/my-project/CLAUDE.md`
 - `~/my-project/.claude/CLAUDE.md`
@@ -134,11 +125,7 @@ See [ARCHITECTURE.md](docs/personality-lab/ARCHITECTURE.md) for the current ment
 
 ## Contributing
 
-If you want to add a connector, improve the compiler, or push the UI further, start with [CONTRIBUTING.md](CONTRIBUTING.md).
-
-If you use TraitMixer publicly, please link back to the main repo:
-
-`https://github.com/wspotter/traitmixer`
+Contributions are welcome. For setup and guidelines, see [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## License
 

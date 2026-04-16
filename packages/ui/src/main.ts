@@ -112,8 +112,8 @@ const RESPONSE_EXAMPLES: Record<string, ResponseExample> = {
     before:
       "TraitMixer is a helpful tool for adjusting AI assistant personalities and improving how they communicate across different scenarios.",
     after:
-      "TraitMixer gives you an actual control surface for agent personality, so you're not stuck doing blind prompt surgery every time the bot sounds weird in public.",
-    traits: ["confident", "memorable", "shareable"],
+      "TraitMixer gives builders a direct way to shape agent persona, so response style can be tuned visually instead of disappearing into prompt edits.",
+    traits: ["confident", "clear", "product-led"],
   },
   signal: {
     context: "Signal example",
@@ -1042,12 +1042,12 @@ function renderApp() {
 
         <section class="hero">
           <div class="hero-copy">
-            <div class="eyebrow">Prompt voice control for agents that should not all sound the same</div>
-            <h1>Mix the voice. Keep the brains.</h1>
+            <div class="eyebrow">Prompt persona control for agents that should not all sound the same</div>
+            <h1>Persona Mixing Made Easy</h1>
             <p class="hero-lead">
-              TraitMixer turns text-response tuning into something you can actually see, test,
-              and ship. Adjust the mix, preview the compiled overlay, then push it into the
-              agent stack you already run.
+              TraitMixer turns text-response persona tuning into something visible, testable,
+              and portable. Adjust the mix, preview the compiled overlay, and push it into the
+              agent stack already in use.
             </p>
             <div class="hero-actions">
               <a class="button button-primary" href=${REPO_URL} target="_blank" rel="noreferrer">View Main Repo</a>
@@ -1060,7 +1060,7 @@ function renderApp() {
               </div>
               <div class="hero-note">
                 <strong>Per Channel</strong>
-                <span>Signal can stay fast while support stays warm and launch copy stays loud.</span>
+                <span>Signal can stay fast while support stays warm and launch copy stays sharper.</span>
               </div>
               <div class="hero-note">
                 <strong>Connector Ready</strong>
@@ -1121,11 +1121,11 @@ function renderApp() {
 
         <section class="section">
           <div class="section-head">
-            <h2>Why people will star this</h2>
+            <h2>Why it works</h2>
             <p>
-              The strong version of this project is not “yet another prompt tool.” It is a
-              very legible control surface for a real pain point: agents that are smart enough
-              to be useful, but whose written replies still sound generic, brittle, or wrong for the room.
+              TraitMixer is not just another prompt editor. It is a clear control surface for a
+              familiar problem: capable agents whose written replies still feel generic, brittle,
+              or off-tone for the context.
             </p>
           </div>
 
@@ -1134,43 +1134,42 @@ function renderApp() {
               <p class="proof-kicker">Product angle</p>
               <h3>It gives personality work a visible, testable interface.</h3>
               <p>
-                That is the hook. Sliders are memorable, screenshots well, and tell the story
-                instantly. The repo becomes easier to share because someone can see what it does
-                before they read a line of code.
+                Sliders make persona changes legible. The interface explains the concept quickly,
+                and the compiled output makes it clear that the mixer is connected to something real.
               </p>
               <div class="proof-rows">
                 <div class="proof-row">
                   <strong>Immediate demo</strong>
-                  <span>One screenshot communicates the concept better than a paragraph of prompt engineering lore.</span>
+                  <span>One screenshot communicates the concept faster than a paragraph about prompt tuning.</span>
                 </div>
                 <div class="proof-row">
                   <strong>Useful output</strong>
                   <span>The overlay is plain text, deterministic, and practical enough to drop into real agent stacks.</span>
                 </div>
                 <div class="proof-row">
-                  <strong>Open-source bait</strong>
-                  <span>People fork tools they can understand quickly and bend to their own weird setups.</span>
+                  <strong>Portable model</strong>
+                  <span>The same core mix can travel across different installs without rewriting the whole prompt layer.</span>
                 </div>
               </div>
             </div>
 
             <div class="proof-panel">
-              <p class="proof-kicker">Launch heuristics</p>
+              <p class="proof-kicker">Core qualities</p>
               <div class="stat-grid">
                 <div class="stat">
-                  <div class="stat-value">8 sec</div>
+                  <div class="stat-value">Visible</div>
                   <div class="stat-label">Understandable</div>
-                  <div class="stat-copy">Someone should grasp the product before they hit the fold.</div>
+                  <div class="stat-copy">The product concept should read clearly from the first screen.</div>
                 </div>
                 <div class="stat">
-                  <div class="stat-value">2 min</div>
+                  <div class="stat-value">Portable</div>
                   <div class="stat-label">Runnable</div>
-                  <div class="stat-copy">The README should get them to a live screen without archaeology.</div>
+                  <div class="stat-copy">The compiled overlay should move cleanly across multiple agent installs.</div>
                 </div>
                 <div class="stat">
-                  <div class="stat-value">1 link</div>
-                  <div class="stat-label">Credit path</div>
-                  <div class="stat-copy">Your name should stay attached anywhere TraitMixer gets passed around.</div>
+                  <div class="stat-value">Deterministic</div>
+                  <div class="stat-label">Trustworthy</div>
+                  <div class="stat-copy">The same persona settings should always compile to the same output.</div>
                 </div>
               </div>
             </div>
@@ -1288,8 +1287,7 @@ function renderApp() {
 
         <footer class="footer">
           <span>
-            TraitMixer is an open-source repo by <strong>Wm. Stacy Potter</strong>.
-            If it helps your stack, link back to the main repo.
+            TraitMixer is an open-source project by <strong>Wm. Stacy Potter</strong>.
           </span>
           <a class="proof-link" href=${REPO_URL} target="_blank" rel="noreferrer">${REPO_URL}</a>
         </footer>

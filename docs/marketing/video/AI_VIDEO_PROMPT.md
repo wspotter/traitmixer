@@ -13,7 +13,7 @@ If the tool allows multiple image references, upload all three.
 ## Non-Negotiable Product Facts
 
 - Product name: `TraitMixer`
-- Tagline: `Mix the voice. Keep the brains.`
+- Tagline: `Persona Mixing Made Easy`
 - It is a web UI for tuning **written AI response style**
 - `voice` means text-response style, not text-to-speech
 - The UI is a slider-based personality mixer for agents
@@ -67,7 +67,7 @@ Use the uploaded screenshots as the primary visual reference and keep the interf
 Visual tone: premium, dark, editorial, precise, modern, confident. Black and deep charcoal surfaces with warm orange and cool cyan glow accents. Sharp typography. No cheesy SaaS stock look.
 
 Video structure:
-1. Open on the hero screen with a slow push-in on the headline: "Mix the voice. Keep the brains."
+1. Open on the hero screen with a slow push-in on the headline: "Persona Mixing Made Easy"
 2. Cut to elegant macro motion over the slider board, showing the personality mixer as the main idea.
 3. Reveal the "Same prompt. Different reply." section and emphasize the before/after written response change.
 4. Show a brief pass over the compatible installs section: Open WebUI, AnythingLLM, Hermes Agent, Agent Zero, OpenClaw, Claude Code.
@@ -100,7 +100,7 @@ Story arc:
 - Show the "Same prompt. Different reply." section to prove the concept
 - Show the compiled overlay section briefly to imply real implementation depth
 - Show the compatible installs: Open WebUI, AnythingLLM, Hermes Agent, Agent Zero, OpenClaw, Claude Code
-- End with the headline "Mix the voice. Keep the brains." and credit the creator: "Built by Wm. Stacy Potter" with the repo URL github.com/wspotter/traitmixer
+- End with the headline "Persona Mixing Made Easy" and credit the creator: "Built by Wm. Stacy Potter" with the repo URL github.com/wspotter/traitmixer
 
 Use close crops, elegant zooms, layered depth, soft interface reflections, and cinematic pacing. Keep everything believable and software-native. No fake testimonials, no fake users, no exaggerated futuristic holograms.
 ```
@@ -122,7 +122,7 @@ Same prompt.
 Different reply.
 
 TraitMixer.
-Mix the voice. Keep the brains.
+Persona Mixing Made Easy.
 Built by Wm. Stacy Potter.
 ```
 
@@ -131,7 +131,7 @@ Built by Wm. Stacy Potter.
 Use these exact text overlays if the generator supports caption guidance:
 
 1. `TRAITMIXER`
-2. `MIX THE VOICE. KEEP THE BRAINS.`
+2. `PERSONA MIXING MADE EASY`
 3. `TUNE WRITTEN AGENT PERSONALITY`
 4. `SAME PROMPT. DIFFERENT REPLY.`
 5. `OPEN WEBUI · ANYTHINGLLM · HERMES · AGENT ZERO · OPENCLAW · CLAUDE CODE`
