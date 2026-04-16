@@ -20,7 +20,14 @@ export class AnythingLLMConnector implements Connector {
   }
 
   info(): ConnectorConfig {
-    return { id: this.id, label: this.label, type: this.type, configured: this.isConfigured(), description: this.description };
+    return {
+      id: this.id,
+      label: this.label,
+      type: this.type,
+      configured: this.isConfigured(),
+      description: this.description,
+      setupHint: "Need URL, API key, and workspace slug",
+    };
   }
 
   async push(overlay: string): Promise<PushResult> {

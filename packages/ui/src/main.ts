@@ -137,18 +137,119 @@ const RESPONSE_EXAMPLES: Record<string, ResponseExample> = {
   },
 };
 
+type TargetStatus = {
+  configured: boolean;
+  description: string;
+  id: string;
+  label: string;
+  setupHint?: string;
+  type: "file" | "http";
+};
+
+type TargetPushResult = {
+  message: string;
+  success: boolean;
+  target: string;
+};
+
+const FALLBACK_TARGETS: TargetStatus[] = [
+  {
+    id: "claude-code",
+    label: "Claude Code",
+    type: "file",
+    configured: true,
+    description: "Write personality overlay to Claude Code project memory",
+    setupHint: "Need CLAUDE.md path",
+  },
+  {
+    id: "open-webui",
+    label: "Open WebUI",
+    type: "http",
+    configured: true,
+    description: "Update model system prompt via Open WebUI REST API",
+    setupHint: "Need URL, API key, and model ID",
+  },
+  {
+    id: "agent-zero",
+    label: "Agent Zero",
+    type: "file",
+    configured: true,
+    description: "Write personality overlay to Agent Zero system prompt file",
+    setupHint: "Need agent.system.md path",
+  },
+  {
+    id: "anythingllm",
+    label: "AnythingLLM",
+    type: "http",
+    configured: false,
+    description: "Update workspace system prompt via AnythingLLM REST API",
+    setupHint: "Need URL, API key, and workspace slug",
+  },
+  {
+    id: "hermes",
+    label: "Hermes Agent",
+    type: "file",
+    configured: false,
+    description: "Write personality overlay to Hermes SOUL.md",
+    setupHint: "Need SOUL.md path",
+  },
+  {
+    id: "openclaw",
+    label: "OpenClaw",
+    type: "file",
+    configured: false,
+    description: "Write personality overlay to OpenClaw workspace config",
+    setupHint: "Need workspace config path",
+  },
+];
+
 type AppState = {
+  availableTargets: TargetStatus[];
   channel: string;
   configDirty: boolean;
   configForm: TraitMixerConfig;
+  pushResults: TargetPushResult[];
+  pushing: boolean;
+  selectedTargetIds: string[];
   target: PersonalityTarget;
+  targetMenuOpen: boolean;
+  targetSelectionTouched: boolean;
+  targetsLoading: boolean;
 };
 
+function defaultSelectedTargetIds(targets: TargetStatus[]): string[] {
+  return targets.filter((target) => target.configured).map((target) => target.id);
+}
+
+function syncSelectedTargetIds(
+  targets: TargetStatus[],
+  currentTargetIds: string[],
+  targetSelectionTouched: boolean,
+): string[] {
+  const configuredTargetIds = new Set(
+    targets.filter((target) => target.configured).map((target) => target.id),
+  );
+  const preservedSelection = currentTargetIds.filter((id) => configuredTargetIds.has(id));
+
+  if (targetSelectionTouched) {
+    return preservedSelection;
+  }
+
+  return preservedSelection.length > 0 ? preservedSelection : defaultSelectedTargetIds(targets);
+}
+
 let state: AppState = {
+  availableTargets: FALLBACK_TARGETS,
   channel: "launch",
   configDirty: false,
   configForm: structuredClone(INITIAL_CONFIG),
+  pushResults: [],
+  pushing: false,
+  selectedTargetIds: defaultSelectedTargetIds(FALLBACK_TARGETS),
   target: "agent",
+  targetMenuOpen: false,
+  targetSelectionTouched: false,
+  targetsLoading: false,
 };
 
 function formatPercent(value: number | undefined): string {
@@ -177,7 +278,149 @@ function updateField(args: { path: string[]; target: PersonalityTarget; value: u
   if (!personalityRoot) return;
 
   setNestedValue(personalityRoot as Record<string, unknown>, args.path, args.value);
-  state = { ...state, configDirty: true, configForm };
+  state = { ...state, configDirty: true, configForm, pushResults: [] };
+  rerender();
+}
+
+async function loadTargets() {
+  state = { ...state, targetsLoading: true };
+  rerender();
+
+  try {
+    const response = await fetch("http://localhost:4400/api/targets");
+    if (!response.ok) {
+      throw new Error(`Target lookup failed: ${response.status}`);
+    }
+
+    const data = (await response.json()) as { targets?: TargetStatus[] };
+    const availableTargets = data.targets?.length ? data.targets : FALLBACK_TARGETS;
+    state = {
+      ...state,
+      availableTargets,
+      selectedTargetIds: syncSelectedTargetIds(
+        availableTargets,
+        state.selectedTargetIds,
+        state.targetSelectionTouched,
+      ),
+      targetsLoading: false,
+    };
+  } catch {
+    state = {
+      ...state,
+      availableTargets: FALLBACK_TARGETS,
+      selectedTargetIds: syncSelectedTargetIds(
+        FALLBACK_TARGETS,
+        state.selectedTargetIds,
+        state.targetSelectionTouched,
+      ),
+      targetsLoading: false,
+    };
+  }
+
+  rerender();
+}
+
+function toggleTargetSelection(targetId: string) {
+  const target = state.availableTargets.find((item) => item.id === targetId);
+  if (!target?.configured) return;
+
+  const selectedTargetIds = state.selectedTargetIds.includes(targetId)
+    ? state.selectedTargetIds.filter((id) => id !== targetId)
+    : [...state.selectedTargetIds, targetId];
+
+  state = {
+    ...state,
+    pushResults: [],
+    selectedTargetIds,
+    targetSelectionTouched: true,
+  };
+  rerender();
+}
+
+async function pushSelectedTargets() {
+  const selectedTargets = state.availableTargets.filter(
+    (target) => target.configured && state.selectedTargetIds.includes(target.id),
+  );
+  if (selectedTargets.length === 0) {
+    state = {
+      ...state,
+      pushResults: [
+        {
+          success: false,
+          target: "traitmixer",
+          message: "Select at least one configured target before pushing.",
+        },
+      ],
+      targetMenuOpen: true,
+    };
+    rerender();
+    return;
+  }
+
+  const personality = resolvePersonalityConfig(state.configForm, AGENT_ID);
+  const overlay = compilePersonalityOverlay(personality, {
+    channel: state.channel === "*" ? undefined : state.channel,
+  });
+
+  if (!overlay) {
+    state = {
+      ...state,
+      pushResults: [
+        {
+          success: false,
+          target: "traitmixer",
+          message: "No overlay was generated for the current mix.",
+        },
+      ],
+    };
+    rerender();
+    return;
+  }
+
+  state = { ...state, pushResults: [], pushing: true, targetMenuOpen: false };
+  rerender();
+
+  try {
+    const response = await fetch("http://localhost:4400/api/push", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        overlay,
+        targets: selectedTargets.map((target) => target.id),
+      }),
+    });
+    const data = (await response.json().catch(() => ({}))) as {
+      error?: string;
+      results?: TargetPushResult[];
+    };
+    state = {
+      ...state,
+      pushResults:
+        data.results && data.results.length > 0
+          ? data.results
+          : [
+              {
+                success: false,
+                target: "traitmixer",
+                message: data.error ?? "Push failed without a detailed response.",
+              },
+            ],
+      pushing: false,
+    };
+  } catch {
+    state = {
+      ...state,
+      pushResults: [
+        {
+          success: false,
+          target: "traitmixer",
+          message: "Could not reach the local push server on port 4400.",
+        },
+      ],
+      pushing: false,
+    };
+  }
+
   rerender();
 }
 
@@ -833,13 +1076,21 @@ function renderApp() {
                 <span>${activeScenario.note}</span>
               </div>
               ${renderAgentPersonality({
+                availableTargets: state.availableTargets,
                 agentId: AGENT_ID,
                 configDirty: state.configDirty,
                 configForm: state.configForm,
                 channel: state.channel,
+                onPush: pushSelectedTargets,
+                onRefreshTargets: loadTargets,
                 target: state.target,
+                pushResults: state.pushResults,
+                pushing: state.pushing,
+                selectedTargetIds: state.selectedTargetIds,
+                targetMenuOpen: state.targetMenuOpen,
+                targetsLoading: state.targetsLoading,
                 onChannelChange: (channel) => {
-                  state = { ...state, channel };
+                  state = { ...state, channel, pushResults: [] };
                   rerender();
                 },
                 onFieldChange: updateField,
@@ -849,14 +1100,20 @@ function renderApp() {
                     channel: "launch",
                     configDirty: false,
                     configForm: structuredClone(INITIAL_CONFIG),
+                    pushResults: [],
                     target: "agent",
                   };
                   rerender();
                 },
                 onTargetChange: (target) => {
-                  state = { ...state, target };
+                  state = { ...state, pushResults: [], target };
                   rerender();
                 },
+                onTargetMenuToggle: () => {
+                  state = { ...state, targetMenuOpen: !state.targetMenuOpen };
+                  rerender();
+                },
+                onTargetSelectToggle: toggleTargetSelection,
               })}
             </div>
           </div>
@@ -1048,3 +1305,4 @@ function rerender() {
 }
 
 rerender();
+void loadTargets();

@@ -3,16 +3,41 @@ import { type TraitMixerConfig, type PersonalityTraits } from "traitmixer-core";
 
 export type PersonalityTarget = "agent" | "defaults";
 
+type TargetStatus = {
+  configured: boolean;
+  description: string;
+  id: string;
+  label: string;
+  setupHint?: string;
+  type: "file" | "http";
+};
+
+type TargetPushResult = {
+  message: string;
+  success: boolean;
+  target: string;
+};
+
 type PanelParams = {
   agentId: string;
+  availableTargets: TargetStatus[];
   channel: string;
   configDirty: boolean;
   configForm: TraitMixerConfig | null;
   onChannelChange: (channel: string) => void;
   onFieldChange: (args: { path: string[]; target: PersonalityTarget; value: unknown }) => void;
+  onPush: () => void;
+  onRefreshTargets: () => void;
   onReset: () => void;
   onTargetChange: (target: PersonalityTarget) => void;
+  onTargetMenuToggle: () => void;
+  onTargetSelectToggle: (targetId: string) => void;
+  pushResults: TargetPushResult[];
+  pushing: boolean;
+  selectedTargetIds: string[];
   target: PersonalityTarget;
+  targetMenuOpen: boolean;
+  targetsLoading: boolean;
 };
 
 const CHANNELS = [
@@ -75,6 +100,27 @@ export function renderAgentPersonality(params: PanelParams) {
     : undefined;
   const baseTraits = personality?.traits ?? {};
   const channelTraits = params.channel === "*" ? {} : personality?.channels?.[params.channel] ?? {};
+  const configuredTargets = params.availableTargets.filter((target) => target.configured);
+  const selectedTargets = configuredTargets.filter((target) =>
+    params.selectedTargetIds.includes(target.id),
+  );
+  const orderedTargets = [...params.availableTargets].sort((left, right) => {
+    const leftSelected = params.selectedTargetIds.includes(left.id) ? 1 : 0;
+    const rightSelected = params.selectedTargetIds.includes(right.id) ? 1 : 0;
+    if (rightSelected !== leftSelected) {
+      return rightSelected - leftSelected;
+    }
+    if (right.configured !== left.configured) {
+      return Number(right.configured) - Number(left.configured);
+    }
+    return left.label.localeCompare(right.label);
+  });
+  const selectedTargetCount = selectedTargets.length;
+  const pushLabel = params.pushing
+    ? "Pushing..."
+    : selectedTargetCount === 0
+      ? "Select targets"
+      : `Push to ${selectedTargetCount === 1 ? "1 install" : `${selectedTargetCount} installs`}`;
 
   const getValue = (key: keyof PersonalityTraits) => {
     const channelValue = params.channel === "*" ? undefined : channelTraits[key];
@@ -83,8 +129,7 @@ export function renderAgentPersonality(params: PanelParams) {
   };
 
   const setValue = (key: keyof PersonalityTraits, value: number) => {
-    const path =
-      params.channel === "*" ? ["traits", key] : ["channels", params.channel, key];
+    const path = params.channel === "*" ? ["traits", key] : ["channels", params.channel, key];
     params.onFieldChange({ path, target: params.target, value });
   };
 
@@ -101,6 +146,10 @@ export function renderAgentPersonality(params: PanelParams) {
     }
   };
 
+  const resolveTargetLabel = (targetId: string) =>
+    params.availableTargets.find((target) => target.id === targetId)?.label ??
+    (targetId === "traitmixer" ? "TraitMixer" : targetId);
+
   return html`
     <style>
       .console {
@@ -115,10 +164,11 @@ export function renderAgentPersonality(params: PanelParams) {
       }
 
       .console-header {
+        position: relative;
         display: flex;
-        align-items: center;
+        align-items: flex-start;
         justify-content: space-between;
-        gap: 12px;
+        gap: 16px;
         padding-bottom: 16px;
         border-bottom: 1px solid rgba(255, 255, 255, 0.08);
       }
@@ -161,21 +211,21 @@ export function renderAgentPersonality(params: PanelParams) {
         box-shadow: 0 0 18px ${params.configDirty ? "rgba(255, 138, 61, 0.45)" : "rgba(86, 214, 255, 0.35)"};
       }
 
-      .control-bar {
+      .console-head-main {
+        display: grid;
+        gap: 10px;
+      }
+
+      .console-actions {
+        position: relative;
         display: flex;
         align-items: center;
-        justify-content: space-between;
-        gap: 14px;
+        gap: 10px;
         flex-wrap: wrap;
+        justify-content: flex-end;
       }
 
-      .segment,
-      .channel-strip {
-        display: inline-flex;
-        flex-wrap: wrap;
-        gap: 8px;
-      }
-
+      .action-button,
       .segment button,
       .channel-strip button,
       .preset-row button,
@@ -194,6 +244,7 @@ export function renderAgentPersonality(params: PanelParams) {
         transition: transform 180ms ease, border-color 180ms ease, background 180ms ease;
       }
 
+      .action-button:hover,
       .segment button:hover,
       .channel-strip button:hover,
       .preset-row button:hover,
@@ -202,11 +253,170 @@ export function renderAgentPersonality(params: PanelParams) {
         border-color: rgba(255, 255, 255, 0.18);
       }
 
+      .action-button[targeted],
       .segment button.active,
       .channel-strip button.active {
         background: rgba(255, 138, 61, 0.12);
         border-color: rgba(255, 178, 124, 0.48);
         color: #fff3e7;
+      }
+
+      .push-button {
+        background: linear-gradient(135deg, rgba(255, 138, 61, 0.98), rgba(255, 79, 108, 0.92));
+        border-color: transparent;
+        color: #140f14;
+        box-shadow: 0 12px 28px rgba(255, 96, 104, 0.24);
+      }
+
+      .push-button:disabled {
+        opacity: 0.55;
+        cursor: not-allowed;
+        box-shadow: none;
+      }
+
+      .target-count {
+        color: rgba(239, 231, 217, 0.56);
+      }
+
+      .target-popover {
+        position: absolute;
+        top: calc(100% + 12px);
+        right: 0;
+        z-index: 5;
+        width: min(360px, 82vw);
+        display: grid;
+        gap: 14px;
+        padding: 18px;
+        border-radius: 18px;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        background:
+          linear-gradient(180deg, rgba(22, 24, 30, 0.98), rgba(12, 14, 20, 0.98));
+        box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45);
+      }
+
+      .target-popover-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+      }
+
+      .target-popover-header strong {
+        font-size: 0.82rem;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: #ffddc1;
+      }
+
+      .target-popover-header span {
+        font-size: 0.76rem;
+        color: rgba(239, 231, 217, 0.6);
+      }
+
+      .target-refresh {
+        appearance: none;
+        border: 0;
+        background: transparent;
+        color: rgba(239, 231, 217, 0.64);
+        font: inherit;
+        font-size: 0.76rem;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        cursor: pointer;
+      }
+
+      .target-list {
+        display: grid;
+        gap: 8px;
+      }
+
+      .target-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 14px;
+        padding: 12px 14px;
+        border-radius: 16px;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        background: rgba(255, 255, 255, 0.025);
+      }
+
+      button.target-item {
+        width: 100%;
+        text-align: left;
+        cursor: pointer;
+        transition: transform 180ms ease, border-color 180ms ease, background 180ms ease;
+      }
+
+      button.target-item:hover {
+        transform: translateY(-1px);
+        border-color: rgba(255, 255, 255, 0.18);
+      }
+
+      .target-item.selected {
+        border-color: rgba(255, 178, 124, 0.34);
+        background: rgba(255, 138, 61, 0.08);
+      }
+
+      .target-item.disabled {
+        opacity: 0.58;
+      }
+
+      .target-item-main {
+        display: grid;
+        gap: 4px;
+      }
+
+      .target-item-label {
+        font-size: 0.84rem;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: #efe7d9;
+      }
+
+      .target-item-copy {
+        color: rgba(239, 231, 217, 0.62);
+        font-size: 0.74rem;
+        line-height: 1.45;
+      }
+
+      .target-item-state {
+        flex: 0 0 auto;
+        display: inline-flex;
+        align-items: center;
+        border-radius: 999px;
+        padding: 6px 10px;
+        font-size: 0.72rem;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: rgba(239, 231, 217, 0.72);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+      }
+
+      .target-item.selected .target-item-state {
+        color: #ffddc1;
+        border-color: rgba(255, 178, 124, 0.3);
+      }
+
+      .target-summary {
+        font-size: 0.74rem;
+        line-height: 1.5;
+        color: rgba(239, 231, 217, 0.58);
+      }
+
+      .control-bar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 14px;
+        flex-wrap: wrap;
+      }
+
+      .segment,
+      .channel-strip {
+        display: inline-flex;
+        flex-wrap: wrap;
+        gap: 8px;
       }
 
       .board {
@@ -332,7 +542,8 @@ export function renderAgentPersonality(params: PanelParams) {
         letter-spacing: 0.06em;
       }
 
-      .preset-panel {
+      .preset-panel,
+      .result-panel {
         display: grid;
         gap: 14px;
         padding: 18px;
@@ -341,7 +552,8 @@ export function renderAgentPersonality(params: PanelParams) {
         border: 1px solid rgba(255, 255, 255, 0.07);
       }
 
-      .preset-panel-header {
+      .preset-panel-header,
+      .result-panel-header {
         display: flex;
         align-items: center;
         justify-content: space-between;
@@ -349,7 +561,8 @@ export function renderAgentPersonality(params: PanelParams) {
         flex-wrap: wrap;
       }
 
-      .preset-panel-header strong {
+      .preset-panel-header strong,
+      .result-panel-header strong {
         font-size: 0.8rem;
         text-transform: uppercase;
         letter-spacing: 0.14em;
@@ -366,6 +579,58 @@ export function renderAgentPersonality(params: PanelParams) {
         color: #ffddc1;
       }
 
+      .result-list {
+        display: grid;
+        gap: 10px;
+      }
+
+      .result-item {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 16px;
+        padding: 12px 14px;
+        border-radius: 14px;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        background: rgba(255, 255, 255, 0.02);
+      }
+
+      .result-item.success {
+        border-color: rgba(111, 255, 191, 0.18);
+        background: rgba(40, 255, 166, 0.05);
+      }
+
+      .result-item.failure {
+        border-color: rgba(255, 120, 120, 0.18);
+        background: rgba(255, 87, 87, 0.04);
+      }
+
+      .result-item-main {
+        display: grid;
+        gap: 4px;
+      }
+
+      .result-item-label {
+        font-size: 0.8rem;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: #efe7d9;
+      }
+
+      .result-item-copy {
+        font-size: 0.76rem;
+        line-height: 1.5;
+        color: rgba(239, 231, 217, 0.68);
+      }
+
+      .result-item-state {
+        flex: 0 0 auto;
+        font-size: 0.72rem;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: rgba(239, 231, 217, 0.72);
+      }
+
       @media (max-width: 720px) {
         .console {
           padding: 18px;
@@ -373,19 +638,101 @@ export function renderAgentPersonality(params: PanelParams) {
 
         .console-header,
         .control-bar,
-        .preset-panel-header {
+        .preset-panel-header,
+        .result-panel-header {
           align-items: flex-start;
+        }
+
+        .console-actions {
+          width: 100%;
+          justify-content: flex-start;
+        }
+
+        .target-popover {
+          left: 0;
+          right: auto;
+          width: min(100%, 380px);
         }
       }
     </style>
 
     <section class="console">
       <div class="console-header">
-        <div class="console-title">
-          <strong>TraitMixer Console</strong>
-          <span>Visual prompt voice control for one agent, many contexts</span>
+        <div class="console-head-main">
+          <div class="console-title">
+            <strong>TraitMixer Console</strong>
+            <span>Visual prompt voice control for one agent, many contexts</span>
+          </div>
+          <div class="console-status">${params.configDirty ? "Draft mix" : "Ready to ship"}</div>
         </div>
-        <div class="console-status">${params.configDirty ? "Draft mix" : "Ready to ship"}</div>
+
+        <div class="console-actions">
+          <button
+            class="action-button"
+            ?targeted=${params.targetMenuOpen}
+            @click=${params.onTargetMenuToggle}
+          >
+            Targets <span class="target-count">(${selectedTargetCount})</span>
+          </button>
+          <button
+            class="action-button push-button"
+            ?disabled=${params.pushing || selectedTargetCount === 0}
+            @click=${params.onPush}
+          >
+            ${pushLabel}
+          </button>
+
+          ${params.targetMenuOpen
+            ? html`
+                <div class="target-popover">
+                  <div class="target-popover-header">
+                    <div>
+                      <strong>Push targets</strong>
+                      <span>${configuredTargets.length} configured of ${params.availableTargets.length} supported</span>
+                    </div>
+                    <button class="target-refresh" @click=${params.onRefreshTargets}>
+                      ${params.targetsLoading ? "Checking..." : "Refresh"}
+                    </button>
+                  </div>
+
+                  <div class="target-list">
+                    ${orderedTargets.map((target) => {
+                      const isSelected = params.selectedTargetIds.includes(target.id);
+                      if (!target.configured) {
+                        return html`
+                          <div class="target-item disabled">
+                            <div class="target-item-main">
+                              <span class="target-item-label">${target.label}</span>
+                              <span class="target-item-copy">${target.setupHint ?? "Setup required"}</span>
+                            </div>
+                            <span class="target-item-state">Setup</span>
+                          </div>
+                        `;
+                      }
+
+                      return html`
+                        <button
+                          class="target-item ${isSelected ? "selected" : ""}"
+                          @click=${() => params.onTargetSelectToggle(target.id)}
+                        >
+                          <span class="target-item-main">
+                            <span class="target-item-label">${target.label}</span>
+                            <span class="target-item-copy">${target.description}</span>
+                          </span>
+                          <span class="target-item-state">${isSelected ? "Selected" : "Ready"}</span>
+                        </button>
+                      `;
+                    })}
+                  </div>
+
+                  <div class="target-summary">
+                    Supported means TraitMixer can talk to it. Configured means it is ready. Selected
+                    means this push will include it.
+                  </div>
+                </div>
+              `
+            : null}
+        </div>
       </div>
 
       <div class="control-bar">
@@ -459,6 +806,30 @@ export function renderAgentPersonality(params: PanelParams) {
           <button @click=${resetTarget}>Flat 50</button>
         </div>
       </div>
+
+      ${params.pushResults.length > 0
+        ? html`
+            <div class="result-panel">
+              <div class="result-panel-header">
+                <strong>Last push</strong>
+                <span>${selectedTargetCount} target${selectedTargetCount === 1 ? "" : "s"} selected</span>
+              </div>
+              <div class="result-list">
+                ${params.pushResults.map(
+                  (result) => html`
+                    <div class="result-item ${result.success ? "success" : "failure"}">
+                      <div class="result-item-main">
+                        <span class="result-item-label">${resolveTargetLabel(result.target)}</span>
+                        <span class="result-item-copy">${result.message}</span>
+                      </div>
+                      <span class="result-item-state">${result.success ? "Success" : "Failed"}</span>
+                    </div>
+                  `,
+                )}
+              </div>
+            </div>
+          `
+        : null}
     </section>
   `;
 }

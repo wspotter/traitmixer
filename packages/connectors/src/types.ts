@@ -11,6 +11,7 @@ export type ConnectorConfig = {
   type: "http" | "file";
   configured: boolean;
   description: string;
+  setupHint?: string;
 };
 
 export interface Connector {

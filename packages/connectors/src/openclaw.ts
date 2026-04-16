@@ -40,7 +40,14 @@ export class OpenClawConnector implements Connector {
   }
 
   info(): ConnectorConfig {
-    return { id: this.id, label: this.label, type: this.type, configured: this.isConfigured(), description: this.description };
+    return {
+      id: this.id,
+      label: this.label,
+      type: this.type,
+      configured: this.isConfigured(),
+      description: this.description,
+      setupHint: "Need workspace config path",
+    };
   }
 
   async push(overlay: string): Promise<PushResult> {

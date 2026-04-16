@@ -46,6 +46,7 @@ export class ClaudeCodeConnector implements Connector {
       type: this.type,
       configured: this.isConfigured(),
       description: this.description,
+      setupHint: "Need CLAUDE.md path",
     };
   }
 
