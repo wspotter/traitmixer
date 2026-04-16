@@ -6,10 +6,6 @@ Use this when your agent works correctly but its written responses are hard to r
 
 ![TraitMixer UI](docs/screenshot.png)
 
-[View the main repo](https://github.com/wspotter/traitmixer)
-
-Built by [Wm. Stacy Potter](https://github.com/wspotter/traitmixer).
-
 ## Core Features
 
 - **Deterministic output**: The compiler is strict. The same slider positions always yield the exact same prompt string.
