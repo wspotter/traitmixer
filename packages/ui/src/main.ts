@@ -1040,14 +1040,12 @@ function renderApp() {
           </span>
         </div>
 
-        <section class="hero">
+        <section class="section">
           <div class="hero-copy">
-            <div class="eyebrow">Prompt persona control for agents that should not all sound the same</div>
-            <h1>Persona Mixing Made Easy</h1>
+            <div class="eyebrow">Visual Agent Persona Tuning</div>
+            <h1>Stop guessing<br>at system prompts</h1>
             <p class="hero-lead">
-              TraitMixer turns text-response persona tuning into something visible, testable,
-              and portable. Adjust the mix, preview the compiled overlay, and push it into the
-              agent stack already in use.
+              TraitMixer lets you map abstract tone instructions into standard numerical values. Use the mixer to set your agent's voice, preview the compiled output, and push the overlay directly into your existing stack.
             </p>
             <div class="hero-actions">
               <a class="button button-primary" href=${REPO_URL} target="_blank" rel="noreferrer">View Main Repo</a>
@@ -1055,16 +1053,16 @@ function renderApp() {
             </div>
             <div class="hero-notes">
               <div class="hero-note">
-                <strong>Deterministic</strong>
-                <span>Same mix in, same overlay out. Easy to diff, test, and trust.</span>
+                <strong>Strict Compiler</strong>
+                <span>Outputs are fully deterministic and repeatable.</span>
               </div>
               <div class="hero-note">
                 <strong>Per Channel</strong>
-                <span>Signal can stay fast while support stays warm and launch copy stays sharper.</span>
+                <span>Set different traits for different environments.</span>
               </div>
               <div class="hero-note">
-                <strong>Connector Ready</strong>
-                <span>Push to Open WebUI, AnythingLLM, Hermes, Agent Zero, OpenClaw, or Claude Code.</span>
+                <strong>Connectors</strong>
+                <span>Supports WebUI, AnythingLLM, Hermes, and Claude Code.</span>
               </div>
             </div>
           </div>
@@ -1121,21 +1119,18 @@ function renderApp() {
 
         <section class="section">
           <div class="section-head">
-            <h2>Why it works</h2>
+            <h2>Fixing brittle prompts</h2>
             <p>
-              TraitMixer is not just another prompt editor. It is a clear control surface for a
-              familiar problem: capable agents whose written replies still feel generic, brittle,
-              or off-tone for the context.
+              Hand-tuning system prompts often results in unstable formatting and unpredictable agent behavior. TraitMixer externalizes text-response traits into a strictly numerical schema, making them easy to adjust.
             </p>
           </div>
 
           <div class="proof-grid">
             <div class="proof-panel">
-              <p class="proof-kicker">Product angle</p>
-              <h3>It gives personality work a visible, testable interface.</h3>
+              <p class="proof-kicker">Architecture</p>
+              <h3>Decoupled Traits</h3>
               <p>
-                Sliders make persona changes legible. The interface explains the concept quickly,
-                and the compiled output makes it clear that the mixer is connected to something real.
+                Variables are separated from the text generation engine.
               </p>
               <div class="proof-rows">
                 <div class="proof-row">
@@ -1178,11 +1173,10 @@ function renderApp() {
 
         <section class="section">
           <div class="section-head">
-            <h2>Same prompt. Different reply.</h2>
+            <h2>Demonstrating voice differences</h2>
             <p>
-              This is the part people instantly get. TraitMixer does not change text-to-speech.
-              It changes how the agent writes. Same task, same underlying intelligence, different
-              written delivery.
+              TraitMixer does not change text-to-speech or underlying logical capabilities.
+              It modifies how the agent formats and delivers its final written response to the user.
             </p>
           </div>
 
@@ -1217,10 +1211,9 @@ function renderApp() {
 
         <section class="section">
           <div class="section-head">
-            <h2>Compiled overlay, not vibes</h2>
+            <h2>Deterministic compiler</h2>
             <p>
-              The best part of the project is that the UI is not pretending to be the product.
-              The product is the compiled personality layer that drops cleanly into the runtime.
+              The UI acts as a frontend to a strict compiler that generates a reproducible system prompt injection.
             </p>
           </div>
 
@@ -1250,10 +1243,9 @@ function renderApp() {
 
         <section class="section">
           <div class="section-head">
-            <h2>Fits the stacks people already use</h2>
+            <h2>Native integrations</h2>
             <p>
-              If this project is going to travel, it needs to meet people where they already
-              built their agent pile. That connector story is a real advantage. Lean into it.
+              TraitMixer pushes compiled overlay outputs directly into your platform of choice using HTTP requests or direct file writes.
             </p>
           </div>
 

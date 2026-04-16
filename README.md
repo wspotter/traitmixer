@@ -1,10 +1,8 @@
 # TraitMixer
 
-**Persona Mixing Made Easy**
+TraitMixer is a visual prompt generator for AI agents. It gives you a mixing board interface to control text-response traits (like tone, directness, and humor) and compiles them into a deterministic system prompt overlay.
 
-TraitMixer is an open-source personality mixer for AI agents. It provides a visual control surface for text-response traits like tone, directness, humor, empathy, formality, safety, and per-channel delivery, then compiles those choices into a deterministic prompt overlay.
-
-TraitMixer is built for agent workflows where the underlying system is capable, but the written responses still feel generic, brittle, too stiff, too chatty, or wrong for the context.
+Use this when your agent works correctly but its written responses are hard to read, overly chatty, generic, or tone-deaf.
 
 ![TraitMixer UI](docs/screenshot.png)
 
@@ -12,44 +10,25 @@ TraitMixer is built for agent workflows where the underlying system is capable, 
 
 Built by [Wm. Stacy Potter](https://github.com/wspotter/traitmixer).
 
-## Why this exists
+## Core Features
 
-Most prompt tuning is still a pile of invisible text edits and wishful thinking.
+- **Deterministic output**: The compiler is strict. The same slider positions always yield the exact same prompt string.
+- **Channel overrides**: Define different trait values for specific contexts (like `signal` for fast responses vs `support` for high empathy) without maintaining multiple base prompts.
+- **Connectors**: Push compiled overlays directly to Open WebUI, AnythingLLM, Hermes, Agent Zero, OpenClaw, or Claude Code.
 
-TraitMixer makes personality work legible:
-
-- The active persona can be seen instead of inferred from prompt text alone.
-- Behavior can vary by channel without rewriting the whole system prompt.
-- The compiled output can be previewed before it is pushed into a real stack.
-- The runtime layer stays deterministic instead of drifting through hand-tuned prompt edits.
-
-The goal is simple: make agent persona control feel more like mixing a board and less like editing invisible prompt fragments.
-
-## What makes it interesting
-
-- **Deterministic compiler**: same inputs produce the same overlay.
-- **Channel overrides**: different delivery for `signal`, `dashboard`, support flows, launch copy, or whatever else you need.
-- **Visual mixer UI**: sliders make persona changes faster to understand and easier to compare.
-- **Connector layer**: push compiled overlays into the platforms people already use.
-- **Git-friendly config**: personality inputs live in plain files instead of being trapped in UI state.
-
-## Before / after agent voice
-
-In TraitMixer, `voice` means the agent's **written response style**, not text-to-speech.
+## Example
 
 Same prompt:
 
 > Tell a builder why TraitMixer matters in one short reply.
 
-Before:
+Without TraitMixer:
 
 > TraitMixer is a helpful tool for adjusting AI assistant personalities and improving how they communicate across different scenarios.
 
-After TraitMixer:
+With TraitMixer:
 
 > TraitMixer gives builders a direct way to shape agent persona, so response style can be tuned visually instead of buried inside prompt edits.
-
-That is the whole pitch in miniature: same job, better written delivery.
 
 ## Supported targets
 
@@ -89,24 +68,20 @@ Then open:
 | `pnpm test:ui` | Runs UI tests |
 | `pnpm typecheck` | Runs TypeScript project checks |
 
-## How it works
+## Architecture
 
-TraitMixer is deliberately small and split into four boring parts:
+TraitMixer is separated into four distinct packages:
 
 1. `packages/core`
    The schema, compiler, and prompt-resolution logic.
 2. `packages/ui`
-   The mixer board and launch-facing UI.
+   The mixing board frontend.
 3. `packages/connectors`
    Adapters for pushing overlays into external tools.
 4. `packages/server`
    A thin local API that lists targets and pushes compiled overlays.
 
-That separation matters. The compiler should be usable without the screen, and the screen should never become the only source of truth.
-
-## The pitch in one sentence
-
-TraitMixer helps agent builders tune written persona visually, preview the result, and push it into the tools they already run.
+Because the core compiler is decoupled, it can be run headlessly in CI or deployment pipelines without relying on the UI.
 
 ## Configuration
 
