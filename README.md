@@ -54,7 +54,7 @@ pnpm dev
 
 Then open:
 
-- UI: `http://localhost:5173`
+- UI: `http://localhost:4401`
 - Push API: `http://localhost:4400`
 
 ## Commands
