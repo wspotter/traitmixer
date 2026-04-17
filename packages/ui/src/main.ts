@@ -438,32 +438,6 @@ function getEffectiveTraits() {
 }
 
 function renderApp() {
-  const { channelTraits, effectiveTraits, overlay } = getEffectiveTraits();
-  const scenarioCopy: Record<string, { label: string; note: string }> = {
-    launch: {
-      label: "Launch mode",
-      note: "Punchier, more confident, built for demos and screenshots.",
-    },
-    signal: {
-      label: "Signal mode",
-      note: "Fast, direct replies without turning into a brick of text.",
-    },
-    dashboard: {
-      label: "Dashboard mode",
-      note: "Operator-facing tone with less banter and more signal.",
-    },
-    support: {
-      label: "Support mode",
-      note: "Higher empathy, safer wording, cleaner recovery language.",
-    },
-    "*": {
-      label: "Base mix",
-      note: "The durable voice underneath every per-channel override.",
-    },
-  };
-  const activeScenario = scenarioCopy[state.channel] ?? scenarioCopy["*"];
-  const activeExample = RESPONSE_EXAMPLES[state.channel] ?? RESPONSE_EXAMPLES["*"];
-
   return html`
     <style>
       .page {
@@ -1031,257 +1005,64 @@ function renderApp() {
     </style>
 
     <div class="page">
-      <div class="shell">
-        <div class="topline">
-          <span class="brandline"><span class="brandmark"></span> TraitMixer</span>
-          <span class="creditline">
-            Built by
-            <a href=${REPO_URL} target="_blank" rel="noreferrer"><strong>Wm. Stacy Potter</strong></a>
-          </span>
+      <header class="app-header">
+        <div class="logo">
+          <span class="logo-mark"></span>
+          <h1>TraitMixer</h1>
         </div>
+      </header>
 
-        <section class="section">
-          <div class="hero-copy">
-            <div class="eyebrow">Visual Agent Persona Tuning</div>
-            <h1>Stop guessing<br>at system prompts</h1>
-            <p class="hero-lead">
-              TraitMixer lets you map abstract tone instructions into standard numerical values. Use the mixer to set your agent's voice, preview the compiled output, and push the overlay directly into your existing stack.
-            </p>
-            <div class="hero-actions">
-              <a class="button button-primary" href=${REPO_URL} target="_blank" rel="noreferrer">View Main Repo</a>
-              <a class="button button-secondary" href="https://github.com/wspotter/traitmixer#quick-start" target="_blank" rel="noreferrer">Read Quick Start</a>
-            </div>
-            <div class="hero-notes">
-              <div class="hero-note">
-                <strong>Strict Compiler</strong>
-                <span>Outputs are fully deterministic and repeatable.</span>
-              </div>
-              <div class="hero-note">
-                <strong>Per Channel</strong>
-                <span>Set different traits for different environments.</span>
-              </div>
-              <div class="hero-note">
-                <strong>Connectors</strong>
-                <span>Supports WebUI, AnythingLLM, Hermes, and Claude Code.</span>
-              </div>
-            </div>
-          </div>
+      <div class="shell" style="margin-top: 40px;">
+        <div class="showcase">
+          ${renderAgentPersonality({
+            availableTargets: state.availableTargets,
+            agentId: AGENT_ID,
+            configDirty: state.configDirty,
+            configForm: state.configForm,
+            channel: state.channel,
+            onPush: pushSelectedTargets,
+            onRefreshTargets: loadTargets,
+            target: state.target,
+            pushResults: state.pushResults,
+            pushing: state.pushing,
+            selectedTargetIds: state.selectedTargetIds,
+            targetMenuOpen: state.targetMenuOpen,
+            targetsLoading: state.targetsLoading,
+            onChannelChange: (channel) => {
+              state = { ...state, channel, pushResults: [] };
+              rerender();
+            },
+            onFieldChange: updateField,
+            onReset: () => {
+              state = {
+                ...state,
+                channel: "launch",
+                configDirty: false,
+                configForm: structuredClone(INITIAL_CONFIG),
+                pushResults: [],
+                target: "agent",
+              };
+              rerender();
+            },
+            onTargetChange: (target) => {
+              state = { ...state, pushResults: [], target };
+              rerender();
+            },
+            onTargetMenuToggle: () => {
+              state = { ...state, targetMenuOpen: !state.targetMenuOpen };
+              rerender();
+            },
+            onTargetSelectToggle: toggleTargetSelection,
+          })}
+        </div>
+      </div>
 
-          <div class="hero-stage">
-            <div class="showcase">
-              <div class="stage-caption">
-                <span><strong>${activeScenario.label}</strong></span>
-                <span>${activeScenario.note}</span>
-              </div>
-              ${renderAgentPersonality({
-                availableTargets: state.availableTargets,
-                agentId: AGENT_ID,
-                configDirty: state.configDirty,
-                configForm: state.configForm,
-                channel: state.channel,
-                onPush: pushSelectedTargets,
-                onRefreshTargets: loadTargets,
-                target: state.target,
-                pushResults: state.pushResults,
-                pushing: state.pushing,
-                selectedTargetIds: state.selectedTargetIds,
-                targetMenuOpen: state.targetMenuOpen,
-                targetsLoading: state.targetsLoading,
-                onChannelChange: (channel) => {
-                  state = { ...state, channel, pushResults: [] };
-                  rerender();
-                },
-                onFieldChange: updateField,
-                onReset: () => {
-                  state = {
-                    ...state,
-                    channel: "launch",
-                    configDirty: false,
-                    configForm: structuredClone(INITIAL_CONFIG),
-                    pushResults: [],
-                    target: "agent",
-                  };
-                  rerender();
-                },
-                onTargetChange: (target) => {
-                  state = { ...state, pushResults: [], target };
-                  rerender();
-                },
-                onTargetMenuToggle: () => {
-                  state = { ...state, targetMenuOpen: !state.targetMenuOpen };
-                  rerender();
-                },
-                onTargetSelectToggle: toggleTargetSelection,
-              })}
-            </div>
-          </div>
-        </section>
-
-        <section class="section">
-          <div class="section-head">
-            <h2>Fixing brittle prompts</h2>
+        <footer class="app-footer">
+          <div class="footer-content">
             <p>
-              Hand-tuning system prompts often results in unstable formatting and unpredictable agent behavior. TraitMixer externalizes text-response traits into a strictly numerical schema, making them easy to adjust.
+              TraitMixer is an open-source project.
             </p>
           </div>
-
-          <div class="proof-grid">
-            <div class="proof-panel">
-              <p class="proof-kicker">Architecture</p>
-              <h3>Decoupled Traits</h3>
-              <p>
-                Variables are separated from the text generation engine.
-              </p>
-              <div class="proof-rows">
-                <div class="proof-row">
-                  <strong>Immediate demo</strong>
-                  <span>One screenshot communicates the concept faster than a paragraph about prompt tuning.</span>
-                </div>
-                <div class="proof-row">
-                  <strong>Useful output</strong>
-                  <span>The overlay is plain text, deterministic, and practical enough to drop into real agent stacks.</span>
-                </div>
-                <div class="proof-row">
-                  <strong>Portable model</strong>
-                  <span>The same core mix can travel across different installs without rewriting the whole prompt layer.</span>
-                </div>
-              </div>
-            </div>
-
-            <div class="proof-panel">
-              <p class="proof-kicker">Core qualities</p>
-              <div class="stat-grid">
-                <div class="stat">
-                  <div class="stat-value">Visible</div>
-                  <div class="stat-label">Understandable</div>
-                  <div class="stat-copy">The product concept should read clearly from the first screen.</div>
-                </div>
-                <div class="stat">
-                  <div class="stat-value">Portable</div>
-                  <div class="stat-label">Runnable</div>
-                  <div class="stat-copy">The compiled overlay should move cleanly across multiple agent installs.</div>
-                </div>
-                <div class="stat">
-                  <div class="stat-value">Deterministic</div>
-                  <div class="stat-label">Trustworthy</div>
-                  <div class="stat-copy">The same persona settings should always compile to the same output.</div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <section class="section">
-          <div class="section-head">
-            <h2>Demonstrating voice differences</h2>
-            <p>
-              TraitMixer does not change text-to-speech or underlying logical capabilities.
-              It modifies how the agent formats and delivers its final written response to the user.
-            </p>
-          </div>
-
-          <div class="example-grid">
-            <div class="example-prompt">
-              <div class="example-prompt-block">
-                <div class="example-prompt-label">${activeExample.context}</div>
-                <div class="example-prompt-text">${activeExample.prompt}</div>
-              </div>
-              <div class="proof-panel">
-                <p class="proof-kicker">What changed</p>
-                <h3>${activeScenario.label}</h3>
-                <p class="example-note">${activeExample.note}</p>
-                <div class="example-traits">
-                  ${activeExample.traits.map((trait) => html`<span>${trait}</span>`)}
-                </div>
-              </div>
-            </div>
-
-            <div class="example-replies">
-              <div class="reply-card before">
-                <div class="reply-label">Before</div>
-                <div class="reply-body">${activeExample.before}</div>
-              </div>
-              <div class="reply-card after">
-                <div class="reply-label">After TraitMixer</div>
-                <div class="reply-body">${activeExample.after}</div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <section class="section">
-          <div class="section-head">
-            <h2>Deterministic compiler</h2>
-            <p>
-              The UI acts as a frontend to a strict compiler that generates a reproducible system prompt injection.
-            </p>
-          </div>
-
-          <div class="overlay-grid">
-            <div class="proof-panel">
-              <p class="proof-kicker">Live mix</p>
-              <h3>${activeScenario.label}</h3>
-              <p>${activeScenario.note}</p>
-              <div class="chip-row">
-                <div class="chip"><strong>Humor</strong> ${formatPercent(effectiveTraits.humor)}</div>
-                <div class="chip"><strong>Directness</strong> ${formatPercent(effectiveTraits.directness)}</div>
-                <div class="chip"><strong>Empathy</strong> ${formatPercent(effectiveTraits.empathy)}</div>
-                <div class="chip"><strong>Confidence</strong> ${formatPercent(effectiveTraits.confidence)}</div>
-                ${state.channel !== "*" && Object.keys(channelTraits).length > 0
-                  ? html`<div class="chip"><strong>Override</strong> ${Object.keys(channelTraits).length} channel traits active</div>`
-                  : html`<div class="chip"><strong>Base voice</strong> no channel override applied</div>`}
-              </div>
-            </div>
-
-            <div class="overlay-box">
-              <p class="proof-kicker">Compiler output</p>
-              <h3>What the runtime actually sees</h3>
-              <pre>${overlay ?? "No overlay generated yet."}</pre>
-            </div>
-          </div>
-        </section>
-
-        <section class="section">
-          <div class="section-head">
-            <h2>Native integrations</h2>
-            <p>
-              TraitMixer pushes compiled overlay outputs directly into your platform of choice using HTTP requests or direct file writes.
-            </p>
-          </div>
-
-          <div class="connector-strip">
-            <div class="connector">
-              <strong>Open WebUI</strong>
-              <span>Patch model system prompts over HTTP.</span>
-            </div>
-            <div class="connector">
-              <strong>AnythingLLM</strong>
-              <span>Update workspace-level prompt behavior cleanly.</span>
-            </div>
-            <div class="connector">
-              <strong>Hermes</strong>
-              <span>Write straight into SOUL.md for local agent setups.</span>
-            </div>
-            <div class="connector">
-              <strong>Agent Zero</strong>
-              <span>Inject into agent.system.md without inventing a new runtime.</span>
-            </div>
-            <div class="connector">
-              <strong>OpenClaw</strong>
-              <span>Push compiled voice into workspace config files.</span>
-            </div>
-            <div class="connector">
-              <strong>Claude Code</strong>
-              <span>Write into CLAUDE.md project memory for Anthropic's coding agent.</span>
-            </div>
-          </div>
-        </section>
-
-        <footer class="footer">
-          <span>
-            TraitMixer is an open-source project by <strong>Wm. Stacy Potter</strong>.
-          </span>
-          <a class="proof-link" href=${REPO_URL} target="_blank" rel="noreferrer">${REPO_URL}</a>
         </footer>
       </div>
     </div>
