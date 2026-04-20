@@ -57,6 +57,8 @@ Then open:
 - UI: `http://localhost:4401`
 - Push API: `http://localhost:4400`
 
+`Compatibility Mode` is enabled in the UI by default. It softens the riskiest flirting/content-rating wording before push so stricter models like Codex/OpenAI targets are less likely to refuse or go weird.
+
 ## Commands
 
 | Command | What it does |
@@ -138,6 +140,14 @@ For OpenClaw specifically, make sure you point TraitMixer at the active workspac
 Outside local development, the browser app should not assume `localhost`. If `VITE_TRAITMIXER_API_URL` is unset, the UI falls back to same-origin requests.
 
 See [ARCHITECTURE.md](docs/personality-lab/ARCHITECTURE.md) for the current mental model.
+
+## OpenClaw Troubleshooting
+
+If OpenClaw webchat starts throwing intermittent `500 /api/chat/send` errors, the usual culprit is stale local session state or TraitMixer pointing at the wrong workspace.
+
+- Confirm `TRAITMIXER_OPENCLAW_WORKSPACE_PATH` matches the active workspace from your OpenClaw config.
+- If the agent still feels wedged, clear or reset that agent's active OpenClaw session so it can start fresh instead of dragging a near-full context window around.
+- TraitMixer manages the workspace prompt file only. If your agent's own `~/.openclaw/openclaw.json` already contains explicit persona text, that config can still override the pushed overlay and may need a one-time cleanup.
 
 ## Contributing
 
