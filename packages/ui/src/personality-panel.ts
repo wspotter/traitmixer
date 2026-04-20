@@ -31,10 +31,10 @@ type PanelParams = {
   onReset: () => void;
   onTargetChange: (target: PersonalityTarget) => void;
   onTargetMenuToggle: () => void;
-  onTargetSelectToggle: (targetId: string) => void;
+  onTargetActionSet: (targetId: string, action: "push" | "keep" | "clear") => void;
   pushResults: TargetPushResult[];
   pushing: boolean;
-  selectedTargetIds: string[];
+  targetActions: Record<string, "push" | "keep" | "clear">;
   target: PersonalityTarget;
   targetMenuOpen: boolean;
   targetsLoading: boolean;
@@ -101,26 +101,24 @@ export function renderAgentPersonality(params: PanelParams) {
   const baseTraits = personality?.traits ?? {};
   const channelTraits = params.channel === "*" ? {} : personality?.channels?.[params.channel] ?? {};
   const configuredTargets = params.availableTargets.filter((target) => target.configured);
-  const selectedTargets = configuredTargets.filter((target) =>
-    params.selectedTargetIds.includes(target.id),
-  );
+  
+  const pushCount = configuredTargets.filter(t => params.targetActions[t.id] === "push").length;
+  const clearCount = configuredTargets.filter(t => params.targetActions[t.id] === "clear").length;
+  const selectedTargetCount = pushCount + clearCount;
+
+  const targetLabelParts = [];
+  if (pushCount > 0) targetLabelParts.push(`${pushCount} push`);
+  if (clearCount > 0) targetLabelParts.push(`${clearCount} wipe`);
+
   const orderedTargets = [...params.availableTargets].sort((left, right) => {
-    const leftSelected = params.selectedTargetIds.includes(left.id) ? 1 : 0;
-    const rightSelected = params.selectedTargetIds.includes(right.id) ? 1 : 0;
-    if (rightSelected !== leftSelected) {
-      return rightSelected - leftSelected;
-    }
-    if (right.configured !== left.configured) {
-      return Number(right.configured) - Number(left.configured);
-    }
     return left.label.localeCompare(right.label);
   });
-  const selectedTargetCount = selectedTargets.length;
+
   const pushLabel = params.pushing
-    ? "Pushing..."
-    : selectedTargetCount === 0
+    ? "Executing..."
+    : (pushCount === 0 && clearCount === 0)
       ? "Select targets"
-      : `Push to ${selectedTargetCount === 1 ? "1 install" : `${selectedTargetCount} installs`}`;
+      : `Apply ${targetLabelParts.join(", ")}`;
 
   const getValue = (key: keyof PersonalityTraits) => {
     const channelValue = params.channel === "*" ? undefined : channelTraits[key];
@@ -157,10 +155,9 @@ export function renderAgentPersonality(params: PanelParams) {
         gap: 18px;
         padding: 24px;
         border-radius: 22px;
-        background:
-          linear-gradient(180deg, rgba(23, 25, 31, 0.94), rgba(13, 15, 20, 0.98));
-        border: 1px solid rgba(255, 255, 255, 0.08);
-        color: #efe7d9;
+        background: var(--panel-bg);
+        border: 1px solid var(--panel-border);
+        color: var(--text);
       }
 
       .console-header {
@@ -231,10 +228,10 @@ export function renderAgentPersonality(params: PanelParams) {
       .preset-row button,
       .utility-button {
         appearance: none;
-        border: 1px solid rgba(255, 255, 255, 0.08);
+        border: 1px solid var(--input-border);
         border-radius: 999px;
-        background: rgba(255, 255, 255, 0.035);
-        color: rgba(239, 231, 217, 0.8);
+        background: var(--input-bg);
+        color: var(--text);
         padding: 10px 14px;
         font: inherit;
         font-size: 0.82rem;
@@ -256,9 +253,9 @@ export function renderAgentPersonality(params: PanelParams) {
       .action-button[targeted],
       .segment button.active,
       .channel-strip button.active {
-        background: rgba(255, 138, 61, 0.12);
-        border-color: rgba(255, 178, 124, 0.48);
-        color: #fff3e7;
+        background: var(--btn-active-bg);
+        border-color: var(--btn-active-bg);
+        color: var(--btn-active-text);
       }
 
       .push-button {
@@ -288,9 +285,8 @@ export function renderAgentPersonality(params: PanelParams) {
         gap: 14px;
         padding: 18px;
         border-radius: 18px;
-        border: 1px solid rgba(255, 255, 255, 0.08);
-        background:
-          linear-gradient(180deg, rgba(22, 24, 30, 0.98), rgba(12, 14, 20, 0.98));
+        border: 1px solid var(--panel-border);
+        background: var(--panel-bg);
         box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45);
       }
 
@@ -332,70 +328,73 @@ export function renderAgentPersonality(params: PanelParams) {
 
       .target-item {
         display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 14px;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
         padding: 12px 14px;
         border-radius: 16px;
-        border: 1px solid rgba(255, 255, 255, 0.08);
-        background: rgba(255, 255, 255, 0.025);
+        border: 1px solid var(--panel-border);
+        background: var(--input-bg);
       }
 
-      button.target-item {
+      .target-segment {
         width: 100%;
-        text-align: left;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        background: var(--bg);
+        padding: 4px;
+        border-radius: 999px;
+        border: 1px solid var(--theme-sel-border, transparent);
+      }
+      
+      .target-segment button {
+        flex: 1;
+        appearance: none;
+        border: none;
+        background: transparent;
+        color: var(--btn-text);
+        padding: 5px 10px;
+        font-family: inherit;
+        font-size: 0.65rem;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        border-radius: 999px;
         cursor: pointer;
-        transition: transform 180ms ease, border-color 180ms ease, background 180ms ease;
+        transition: all 180ms ease;
+      }
+      
+      .target-segment button:hover {
+        color: var(--btn-hover-text);
+        background: var(--btn-hover-bg);
       }
 
-      button.target-item:hover {
-        transform: translateY(-1px);
-        border-color: rgba(255, 255, 255, 0.18);
-      }
-
-      .target-item.selected {
-        border-color: rgba(255, 178, 124, 0.34);
-        background: rgba(255, 138, 61, 0.08);
-      }
-
-      .target-item.disabled {
-        opacity: 0.58;
+      .target-segment button.active {
+        color: var(--btn-active-text);
+        background: var(--btn-active-bg);
+        box-shadow: 0 2px 8px rgba(0,0,0,0.15);
       }
 
       .target-item-main {
         display: grid;
         gap: 4px;
+        width: 100%;
       }
 
       .target-item-label {
-        font-size: 0.84rem;
+        font-size: 0.72rem;
         letter-spacing: 0.08em;
         text-transform: uppercase;
-        color: #efe7d9;
+        color: var(--text);
+        font-weight: bold;
       }
 
       .target-item-copy {
-        color: rgba(239, 231, 217, 0.62);
-        font-size: 0.74rem;
+        color: var(--text);
+        opacity: 0.62;
+        font-size: 0.6rem;
         line-height: 1.45;
-      }
-
-      .target-item-state {
-        flex: 0 0 auto;
-        display: inline-flex;
-        align-items: center;
-        border-radius: 999px;
-        padding: 6px 10px;
-        font-size: 0.72rem;
-        letter-spacing: 0.1em;
-        text-transform: uppercase;
-        color: rgba(239, 231, 217, 0.72);
-        border: 1px solid rgba(255, 255, 255, 0.08);
-      }
-
-      .target-item.selected .target-item-state {
-        color: #ffddc1;
-        border-color: rgba(255, 178, 124, 0.3);
+        word-break: break-word;
       }
 
       .target-summary {
@@ -660,10 +659,10 @@ export function renderAgentPersonality(params: PanelParams) {
       <div class="console-header">
         <div class="console-head-main">
           <div class="console-title">
-            <strong>TraitMixer Console</strong>
-            <span>Visual prompt voice control for one agent, many contexts</span>
+            <strong>Personality Console</strong>
+            <span>Mix and save unique personalities for your ai.</span>
           </div>
-          <div class="console-status">${params.configDirty ? "Draft mix" : "Ready to ship"}</div>
+          <div class="console-status">${params.configDirty ? "Draft mix" : ""}</div>
         </div>
 
         <div class="console-actions">
@@ -697,7 +696,7 @@ export function renderAgentPersonality(params: PanelParams) {
 
                   <div class="target-list">
                     ${orderedTargets.map((target) => {
-                      const isSelected = params.selectedTargetIds.includes(target.id);
+                      const action = params.targetActions[target.id] || "keep";
                       if (!target.configured) {
                         return html`
                           <div class="target-item disabled">
@@ -705,22 +704,31 @@ export function renderAgentPersonality(params: PanelParams) {
                               <span class="target-item-label">${target.label}</span>
                               <span class="target-item-copy">${target.setupHint ?? "Setup required"}</span>
                             </div>
-                            <span class="target-item-state">Setup</span>
                           </div>
                         `;
                       }
 
                       return html`
-                        <button
-                          class="target-item ${isSelected ? "selected" : ""}"
-                          @click=${() => params.onTargetSelectToggle(target.id)}
-                        >
+                        <div class="target-item">
                           <span class="target-item-main">
                             <span class="target-item-label">${target.label}</span>
                             <span class="target-item-copy">${target.description}</span>
                           </span>
-                          <span class="target-item-state">${isSelected ? "Selected" : "Ready"}</span>
-                        </button>
+                          <div class="target-segment">
+                            <button
+                              class="${action === 'push' ? 'active' : ''}"
+                              @click=${() => params.onTargetActionSet(target.id, 'push')}
+                            >Push</button>
+                            <button
+                              class="${action === 'keep' ? 'active' : ''}"
+                              @click=${() => params.onTargetActionSet(target.id, 'keep')}
+                            >Keep</button>
+                            <button
+                              class="${action === 'clear' ? 'active' : ''}"
+                              @click=${() => params.onTargetActionSet(target.id, 'clear')}
+                            >Clear</button>
+                          </div>
+                        </div>
                       `;
                     })}
                   </div>
@@ -735,35 +743,7 @@ export function renderAgentPersonality(params: PanelParams) {
         </div>
       </div>
 
-      <div class="control-bar">
-        <div class="segment">
-          <button
-            class=${params.target === "agent" ? "active" : ""}
-            @click=${() => params.onTargetChange("agent")}
-          >
-            Agent voice
-          </button>
-          <button
-            class=${params.target === "defaults" ? "active" : ""}
-            @click=${() => params.onTargetChange("defaults")}
-          >
-            Default voice
-          </button>
-        </div>
 
-        <div class="channel-strip">
-          ${CHANNELS.map(
-            (channel) => html`
-              <button
-                class=${params.channel === channel.key ? "active" : ""}
-                @click=${() => params.onChannelChange(channel.key)}
-              >
-                ${channel.label}
-              </button>
-            `,
-          )}
-        </div>
-      </div>
 
       <div class="board">
         <div class="fader-grid">
@@ -795,7 +775,7 @@ export function renderAgentPersonality(params: PanelParams) {
       <div class="preset-panel">
         <div class="preset-panel-header">
           <strong>Quick mixes</strong>
-          <button class="utility-button" @click=${params.onReset}>Reset demo</button>
+          <button class="utility-button" @click=${params.onReset}>RESET SLIDERS</button>
         </div>
         <div class="preset-row">
           ${PRESETS.map(
@@ -803,7 +783,6 @@ export function renderAgentPersonality(params: PanelParams) {
               <button @click=${() => applyPreset(preset.traits)}>${preset.name}</button>
             `,
           )}
-          <button @click=${resetTarget}>Flat 50</button>
         </div>
       </div>
 

@@ -45,7 +45,7 @@ export class AgentZeroConnector implements Connector {
       label: this.label,
       type: this.type,
       configured: this.isConfigured(),
-      description: this.description,
+      description: this.isConfigured() ? (process.env.HOME ? this.promptPath.replace(process.env.HOME, "~") : this.promptPath) : "Not configured",
       setupHint: "Need agent.system.md path",
     };
   }
@@ -66,6 +66,29 @@ export class AgentZeroConnector implements Connector {
       return { success: true, target: this.id, message: `Written to ${this.promptPath}` };
     } catch (err) {
       return { success: false, target: this.id, message: `Write failed: ${(err as Error).message}` };
+    }
+  }
+
+  async uninstall(): Promise<PushResult> {
+    if (!this.isConfigured()) {
+      return { success: false, target: this.id, message: "Set TRAITMIXER_AGENTZERO_PROMPT_PATH (e.g. ~/agent-zero/prompts/default/agent.system.md)" };
+    }
+    try {
+      if (!fs.existsSync(this.promptPath)) {
+        return { success: true, target: this.id, message: `Nothing to uninstall, file not found: ${this.promptPath}` };
+      }
+      const existing = fs.readFileSync(this.promptPath, "utf-8");
+      
+      const startIdx = existing.indexOf("<!-- traitmixer:start -->");
+      const endIdx = existing.indexOf("<!-- traitmixer:end -->");
+      if (startIdx !== -1 && endIdx !== -1) {
+         const cleaned = existing.slice(0, startIdx).trimEnd() + "\n\n" + existing.slice(endIdx + "<!-- traitmixer:end -->".length).trimStart();
+         fs.writeFileSync(this.promptPath, cleaned.trim() + "\n", "utf-8");
+         return { success: true, target: this.id, message: `Uninstalled from ${this.promptPath}` };
+      }
+      return { success: true, target: this.id, message: `No traits found in ${this.promptPath}` };
+    } catch (err) {
+      return { success: false, target: this.id, message: `Uninstall failed: ${(err as Error).message}` };
     }
   }
 }

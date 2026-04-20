@@ -13,7 +13,8 @@
     "test": "pnpm -r test",
     "test:core": "pnpm --filter traitmixer-core test",
     "test:ui": "pnpm --filter traitmixer-ui test",
-    "typecheck": "tsc -b"
+    "typecheck": "tsc -b",
+    "uninstall-traits": "pnpm --filter traitmixer-server uninstall-traits"
   },
   "devDependencies": {
     "typescript": "^5.8.0"

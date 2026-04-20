@@ -25,7 +25,7 @@ export class AnythingLLMConnector implements Connector {
       label: this.label,
       type: this.type,
       configured: this.isConfigured(),
-      description: this.description,
+      description: this.isConfigured() ? `${this.baseUrl}/.../${this.workspaceSlug}` : "Not configured",
       setupHint: "Need URL, API key, and workspace slug",
     };
   }
@@ -50,6 +50,31 @@ export class AnythingLLMConnector implements Connector {
         return { success: false, target: this.id, message: `Update failed: ${res.status} ${res.statusText}` };
       }
       return { success: true, target: this.id, message: `Updated workspace "${this.workspaceSlug}" system prompt` };
+    } catch (err) {
+      return { success: false, target: this.id, message: `Request failed: ${(err as Error).message}` };
+    }
+  }
+
+  async uninstall(): Promise<PushResult> {
+    if (!this.isConfigured()) {
+      return { success: false, target: this.id, message: "Set TRAITMIXER_ANYTHINGLLM_URL, TRAITMIXER_ANYTHINGLLM_API_KEY, and TRAITMIXER_ANYTHINGLLM_WORKSPACE" };
+    }
+    try {
+      const res = await fetch(
+        `${this.baseUrl}/api/v1/workspace/${encodeURIComponent(this.workspaceSlug)}/update`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${this.apiKey}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ openAiPrompt: "" }),
+        },
+      );
+      if (!res.ok) {
+        return { success: false, target: this.id, message: `Uninstall failed: ${res.status} ${res.statusText}` };
+      }
+      return { success: true, target: this.id, message: `Uninstalled from workspace "${this.workspaceSlug}"` };
     } catch (err) {
       return { success: false, target: this.id, message: `Request failed: ${(err as Error).message}` };
     }

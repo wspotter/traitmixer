@@ -45,7 +45,7 @@ export class OpenClawConnector implements Connector {
       label: this.label,
       type: this.type,
       configured: this.isConfigured(),
-      description: this.description,
+      description: this.isConfigured() ? (process.env.HOME ? this.configPath.replace(process.env.HOME, "~") : this.configPath) : "Not configured",
       setupHint: "Need workspace config path",
     };
   }
@@ -62,6 +62,29 @@ export class OpenClawConnector implements Connector {
       return { success: true, target: this.id, message: `Written to ${this.configPath}` };
     } catch (err) {
       return { success: false, target: this.id, message: `Write failed: ${(err as Error).message}` };
+    }
+  }
+
+  async uninstall(): Promise<PushResult> {
+    if (!this.isConfigured()) {
+      return { success: false, target: this.id, message: "TRAITMIXER_OPENCLAW_CONFIG_PATH not set" };
+    }
+    try {
+      if (!fs.existsSync(this.configPath)) {
+        return { success: true, target: this.id, message: `Nothing to uninstall, file not found: ${this.configPath}` };
+      }
+      const existing = fs.readFileSync(this.configPath, "utf-8");
+      
+      const startIdx = existing.indexOf("<!-- traitmixer:start -->");
+      const endIdx = existing.indexOf("<!-- traitmixer:end -->");
+      if (startIdx !== -1 && endIdx !== -1) {
+         const cleaned = existing.slice(0, startIdx).trimEnd() + "\n\n" + existing.slice(endIdx + "<!-- traitmixer:end -->".length).trimStart();
+         fs.writeFileSync(this.configPath, cleaned.trim() + "\n", "utf-8");
+         return { success: true, target: this.id, message: `Uninstalled from ${this.configPath}` };
+      }
+      return { success: true, target: this.id, message: `No traits found in ${this.configPath}` };
+    } catch (err) {
+      return { success: false, target: this.id, message: `Uninstall failed: ${(err as Error).message}` };
     }
   }
 }

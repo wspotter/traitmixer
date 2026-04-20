@@ -37,4 +37,50 @@ describe("TraitMixer Compiler", () => {
     expect(overlay).toMatch(/Directness: 100%/);
     expect(overlay).toMatch(/Verbosity: 0%/);
   });
+
+  it("resolves through 3 variable levels: defaults, agent, and channel overrides", () => {
+    const config = {
+      agents: {
+        defaults: {
+          personality: {
+            traits: {
+              humor: 50,
+              empathy: 50
+            },
+            channels: {
+              support: {
+                empathy: 90
+              }
+            }
+          }
+        },
+        list: [
+          {
+            id: "bot",
+            personality: {
+              traits: {
+                humor: 20
+              },
+              channels: {
+                support: {
+                  formality: 80
+                }
+              }
+            }
+          }
+        ]
+      }
+    };
+
+    // Resolving defaults + agent base traits
+    const agentPersonality = resolvePersonalityConfig(config as any, "bot");
+    expect(agentPersonality?.traits).toEqual({ humor: 20, empathy: 50 });
+    expect(agentPersonality?.channels?.support).toEqual({ empathy: 90, formality: 80 });
+
+    // Compiling with a specific channel overrides the base agent traits
+    const overlay = compilePersonalityOverlay(agentPersonality, { channel: "support" });
+    expect(overlay).toMatch(/Empathy: 90%/);
+    expect(overlay).toMatch(/Formality: 80%/);
+    expect(overlay).toMatch(/Humor: 20%/);
+  });
 });

@@ -28,7 +28,7 @@ async function readBody(req: http.IncomingMessage): Promise<string> {
   return Buffer.concat(chunks).toString("utf-8");
 }
 
-const server = http.createServer(async (req, res) => {
+export const server = http.createServer(async (req, res) => {
   // CORS preflight
   if (req.method === "OPTIONS") {
     res.writeHead(204, corsHeaders());
@@ -50,25 +50,36 @@ const server = http.createServer(async (req, res) => {
       const body = JSON.parse(await readBody(req)) as {
         overlay: string;
         targets?: string[];
+        uninstall?: string[];
       };
-      if (!body.overlay || typeof body.overlay !== "string") {
-        json(res, 400, { error: "Missing 'overlay' string in request body" });
+      if (typeof body.overlay !== "string") {
+        json(res, 400, { error: "Missing or invalid 'overlay' string in request body" });
         return;
       }
 
       const targetIds = body.targets ?? connectors.filter((c) => c.isConfigured()).map((c) => c.id);
+      const uninstallIds = body.uninstall ?? [];
       const results: PushResult[] = [];
 
       for (const id of targetIds) {
         const connector = connectorMap.get(id);
         if (!connector) {
-          results.push({ success: false, target: id, message: `Unknown target: ${id}` });
+          results.push({ success: false, target: id, message: `Unknown push target: ${id}` });
           continue;
         }
         results.push(await connector.push(body.overlay));
       }
 
-      const allOk = results.every((r) => r.success);
+      for (const id of uninstallIds) {
+        const connector = connectorMap.get(id);
+        if (!connector) {
+          results.push({ success: false, target: id, message: `Unknown uninstall target: ${id}` });
+          continue;
+        }
+        results.push(await connector.uninstall());
+      }
+
+      const allOk = results.length === 0 || results.every((r) => r.success);
       json(res, allOk ? 200 : 207, { results });
     } catch (err) {
       json(res, 400, { error: `Invalid request: ${(err as Error).message}` });
@@ -85,11 +96,15 @@ const server = http.createServer(async (req, res) => {
   json(res, 404, { error: "Not found" });
 });
 
-server.listen(PORT, () => {
-  console.log(`TraitMixer server listening on http://localhost:${PORT}`);
-  console.log("Configured targets:");
-  for (const c of connectors) {
-    const status = c.isConfigured() ? "✓ ready" : "✗ not configured";
-    console.log(`  ${c.label}: ${status}`);
-  }
-});
+import { fileURLToPath } from "node:url";
+
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
+  server.listen(PORT, () => {
+    console.log(`TraitMixer server listening on http://localhost:${PORT}`);
+    console.log("Configured targets:");
+    for (const c of connectors) {
+      const status = c.isConfigured() ? "✓ ready" : "✗ not configured";
+      console.log(`  ${c.label}: ${status}`);
+    }
+  });
+}

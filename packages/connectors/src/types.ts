@@ -22,4 +22,5 @@ export interface Connector {
   isConfigured(): boolean;
   info(): ConnectorConfig;
   push(overlay: string): Promise<PushResult>;
+  uninstall(): Promise<PushResult>;
 }

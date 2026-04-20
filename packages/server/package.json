@@ -4,15 +4,18 @@
   "type": "module",
   "scripts": {
     "dev": "node --import tsx src/server.ts",
-    "start": "node --import tsx src/server.ts"
+    "start": "node --import tsx src/server.ts",
+    "uninstall-traits": "node --import tsx src/uninstall.ts",
+    "test": "vitest run"
   },
   "dependencies": {
-    "traitmixer-core": "workspace:*",
-    "traitmixer-connectors": "workspace:*"
+    "traitmixer-connectors": "workspace:*",
+    "traitmixer-core": "workspace:*"
   },
   "devDependencies": {
+    "@types/node": "^22.0.0",
     "tsx": "^4.19.0",
     "typescript": "^5.8.0",
-    "@types/node": "^22.0.0"
+    "vitest": "^4.1.4"
   }
 }

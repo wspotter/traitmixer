@@ -45,7 +45,7 @@ export class ClaudeCodeConnector implements Connector {
       label: this.label,
       type: this.type,
       configured: this.isConfigured(),
-      description: this.description,
+      description: this.isConfigured() ? (process.env.HOME ? this.memoryPath.replace(process.env.HOME, "~") : this.memoryPath) : "Not configured",
       setupHint: "Need CLAUDE.md path",
     };
   }
@@ -76,6 +76,34 @@ export class ClaudeCodeConnector implements Connector {
         target: this.id,
         message: `Write failed: ${(err as Error).message}`,
       };
+    }
+  }
+
+  async uninstall(): Promise<PushResult> {
+    if (!this.isConfigured()) {
+      return {
+        success: false,
+        target: this.id,
+        message:
+          "Set TRAITMIXER_CLAUDECODE_PATH (for example: ~/my-project/CLAUDE.md or ~/my-project/.claude/CLAUDE.md)",
+      };
+    }
+    try {
+      if (!fs.existsSync(this.memoryPath)) {
+        return { success: true, target: this.id, message: `Nothing to uninstall, file not found: ${this.memoryPath}` };
+      }
+      const existing = fs.readFileSync(this.memoryPath, "utf-8");
+      
+      const startIdx = existing.indexOf("<!-- traitmixer:start -->");
+      const endIdx = existing.indexOf("<!-- traitmixer:end -->");
+      if (startIdx !== -1 && endIdx !== -1) {
+         const cleaned = existing.slice(0, startIdx).trimEnd() + "\n\n" + existing.slice(endIdx + "<!-- traitmixer:end -->".length).trimStart();
+         fs.writeFileSync(this.memoryPath, cleaned.trim() + "\n", "utf-8");
+         return { success: true, target: this.id, message: `Uninstalled from ${this.memoryPath}` };
+      }
+      return { success: true, target: this.id, message: `No traits found in ${this.memoryPath}` };
+    } catch (err) {
+      return { success: false, target: this.id, message: `Uninstall failed: ${(err as Error).message}` };
     }
   }
 }
