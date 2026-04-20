@@ -1,6 +1,7 @@
 import * as fs from "node:fs";
-import * as path from "node:path";
 import type { Connector, PushResult, ConnectorConfig } from "./types.js";
+import { sanitizeOverlayForConstrainedModels } from "./overlay-policy.js";
+import { resolveConfiguredPath } from "./path-utils.js";
 
 const MARKER_START = "<!-- traitmixer:start -->";
 const MARKER_END = "<!-- traitmixer:end -->";
@@ -15,13 +16,6 @@ function injectOverlay(existing: string, overlay: string): string {
   return existing.trimEnd() + "\n\n" + block + "\n";
 }
 
-function resolveHome(filePath: string): string {
-  if (filePath.startsWith("~/")) {
-    return path.join(process.env.HOME ?? "/root", filePath.slice(2));
-  }
-  return filePath;
-}
-
 export class OpenClawConnector implements Connector {
   readonly id = "openclaw";
   readonly label = "OpenClaw";
@@ -30,7 +24,7 @@ export class OpenClawConnector implements Connector {
   private configPath: string;
 
   constructor(configPath?: string) {
-    this.configPath = resolveHome(
+    this.configPath = resolveConfiguredPath(
       configPath ?? process.env.TRAITMIXER_OPENCLAW_CONFIG_PATH ?? ""
     );
   }
@@ -55,11 +49,16 @@ export class OpenClawConnector implements Connector {
       return { success: false, target: this.id, message: "TRAITMIXER_OPENCLAW_CONFIG_PATH not set" };
     }
     try {
+      const { changed, overlay: safeOverlay } = sanitizeOverlayForConstrainedModels(overlay);
       const existing = fs.existsSync(this.configPath)
         ? fs.readFileSync(this.configPath, "utf-8")
         : "";
-      fs.writeFileSync(this.configPath, injectOverlay(existing, overlay), "utf-8");
-      return { success: true, target: this.id, message: `Written to ${this.configPath}` };
+      fs.writeFileSync(this.configPath, injectOverlay(existing, safeOverlay), "utf-8");
+      return {
+        success: true,
+        target: this.id,
+        message: `Written to ${this.configPath}${changed ? " (safety wording adjusted for constrained models)" : ""}`,
+      };
     } catch (err) {
       return { success: false, target: this.id, message: `Write failed: ${(err as Error).message}` };
     }

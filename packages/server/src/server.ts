@@ -1,22 +1,48 @@
 import * as http from "node:http";
+import * as path from "node:path";
 import { createAllConnectors } from "traitmixer-connectors";
 import type { Connector, PushResult } from "traitmixer-connectors";
+import { fileURLToPath } from "node:url";
 
 const PORT = parseInt(process.env.TRAITMIXER_SERVER_PORT ?? "4400", 10);
+process.env.TRAITMIXER_APP_ROOT ??= path.resolve(fileURLToPath(new URL("../..", import.meta.url)));
 const connectors = createAllConnectors();
 const connectorMap = new Map<string, Connector>(connectors.map((c) => [c.id, c]));
 
-function corsHeaders(): Record<string, string> {
-  return {
+function allowedOrigins(): string[] | "*" {
+  const configured = process.env.TRAITMIXER_ALLOWED_ORIGINS?.split(",")
+    .map((origin) => origin.trim())
+    .filter(Boolean);
+
+  return configured && configured.length > 0 ? configured : "*";
+}
+
+function corsHeaders(origin?: string): Record<string, string> {
+  const allowOrigin = allowedOrigins();
+  const resolvedOrigin =
+    allowOrigin === "*"
+      ? "*"
+      : origin && allowOrigin.includes(origin)
+        ? origin
+        : allowOrigin[0];
+
+  const headers: Record<string, string> = {
     "Access-Control-Allow-Origin": "*",
     "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
     "Access-Control-Allow-Headers": "Content-Type",
     "Content-Type": "application/json",
   };
+
+  headers["Access-Control-Allow-Origin"] = resolvedOrigin;
+  if (resolvedOrigin !== "*") {
+    headers.Vary = "Origin";
+  }
+
+  return headers;
 }
 
-function json(res: http.ServerResponse, status: number, body: unknown) {
-  res.writeHead(status, corsHeaders());
+function json(res: http.ServerResponse, status: number, body: unknown, origin?: string) {
+  res.writeHead(status, corsHeaders(origin));
   res.end(JSON.stringify(body));
 }
 
@@ -29,9 +55,11 @@ async function readBody(req: http.IncomingMessage): Promise<string> {
 }
 
 export const server = http.createServer(async (req, res) => {
+  const origin = typeof req.headers.origin === "string" ? req.headers.origin : undefined;
+
   // CORS preflight
   if (req.method === "OPTIONS") {
-    res.writeHead(204, corsHeaders());
+    res.writeHead(204, corsHeaders(origin));
     res.end();
     return;
   }
@@ -40,7 +68,7 @@ export const server = http.createServer(async (req, res) => {
   if (req.method === "GET" && req.url === "/api/targets") {
     json(res, 200, {
       targets: connectors.map((c) => c.info()),
-    });
+    }, origin);
     return;
   }
 
@@ -53,7 +81,7 @@ export const server = http.createServer(async (req, res) => {
         uninstall?: string[];
       };
       if (typeof body.overlay !== "string") {
-        json(res, 400, { error: "Missing or invalid 'overlay' string in request body" });
+        json(res, 400, { error: "Missing or invalid 'overlay' string in request body" }, origin);
         return;
       }
 
@@ -80,23 +108,30 @@ export const server = http.createServer(async (req, res) => {
       }
 
       const allOk = results.length === 0 || results.every((r) => r.success);
-      json(res, allOk ? 200 : 207, { results });
+      json(res, allOk ? 200 : 207, { results }, origin);
     } catch (err) {
-      json(res, 400, { error: `Invalid request: ${(err as Error).message}` });
+      json(res, 400, { error: `Invalid request: ${(err as Error).message}` }, origin);
     }
     return;
   }
 
   // GET /api/health
   if (req.method === "GET" && req.url === "/api/health") {
-    json(res, 200, { status: "ok", targets: connectors.length });
+    json(
+      res,
+      200,
+      {
+        status: "ok",
+        targets: connectors.length,
+        allowedOrigins: allowedOrigins(),
+      },
+      origin,
+    );
     return;
   }
 
-  json(res, 404, { error: "Not found" });
+  json(res, 404, { error: "Not found" }, origin);
 });
-
-import { fileURLToPath } from "node:url";
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   server.listen(PORT, () => {

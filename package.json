@@ -9,11 +9,13 @@
     "dev": "pnpm --filter traitmixer-ui dev & pnpm --filter traitmixer-server dev & wait",
     "dev:ui": "pnpm --filter traitmixer-ui dev",
     "dev:server": "pnpm --filter traitmixer-server dev",
-    "build": "pnpm --filter traitmixer-ui build",
+    "start": "pnpm --filter traitmixer-server start",
+    "build": "pnpm -r build",
     "test": "pnpm -r test",
     "test:core": "pnpm --filter traitmixer-core test",
     "test:ui": "pnpm --filter traitmixer-ui test",
     "typecheck": "tsc -b",
+    "verify": "pnpm test && pnpm typecheck && pnpm build",
     "uninstall-traits": "pnpm --filter traitmixer-server uninstall-traits"
   },
   "devDependencies": {

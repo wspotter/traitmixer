@@ -1,6 +1,7 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
 import type { Connector, PushResult, ConnectorConfig } from "./types.js";
+import { resolveConfiguredPath } from "./path-utils.js";
 
 const MARKER_START = "<!-- traitmixer:start -->";
 const MARKER_END = "<!-- traitmixer:end -->";
@@ -15,13 +16,6 @@ function injectOverlay(existing: string, overlay: string): string {
   return existing.trimEnd() + "\n\n" + block + "\n";
 }
 
-function resolveHome(filePath: string): string {
-  if (filePath.startsWith("~/")) {
-    return path.join(process.env.HOME ?? "/root", filePath.slice(2));
-  }
-  return filePath;
-}
-
 export class AgentZeroConnector implements Connector {
   readonly id = "agent-zero";
   readonly label = "Agent Zero";
@@ -30,7 +24,7 @@ export class AgentZeroConnector implements Connector {
   private promptPath: string;
 
   constructor(promptPath?: string) {
-    this.promptPath = resolveHome(
+    this.promptPath = resolveConfiguredPath(
       promptPath ?? process.env.TRAITMIXER_AGENTZERO_PROMPT_PATH ?? ""
     );
   }

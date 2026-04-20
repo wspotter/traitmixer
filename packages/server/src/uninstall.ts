@@ -1,4 +1,8 @@
+import * as path from "node:path";
 import { createAllConnectors } from "traitmixer-connectors";
+import { fileURLToPath } from "node:url";
+
+process.env.TRAITMIXER_APP_ROOT ??= path.resolve(fileURLToPath(new URL("../..", import.meta.url)));
 
 async function run() {
   const connectors = createAllConnectors();

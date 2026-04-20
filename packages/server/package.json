@@ -3,9 +3,10 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
-    "dev": "node --import tsx src/server.ts",
-    "start": "node --import tsx src/server.ts",
-    "uninstall-traits": "node --import tsx src/uninstall.ts",
+    "dev": "node --env-file=../../.env --import tsx src/server.ts",
+    "build": "tsc -p tsconfig.json",
+    "start": "node --env-file=../../.env --import tsx src/server.ts",
+    "uninstall-traits": "node --env-file=../../.env --import tsx src/uninstall.ts",
     "test": "vitest run"
   },
   "dependencies": {

@@ -1,6 +1,8 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
 import type { Connector, PushResult, ConnectorConfig } from "./types.js";
+import { sanitizeOverlayForConstrainedModels } from "./overlay-policy.js";
+import { resolveConfiguredPath } from "./path-utils.js";
 
 const MARKER_START = "<!-- traitmixer:start -->";
 const MARKER_END = "<!-- traitmixer:end -->";
@@ -15,13 +17,6 @@ function injectOverlay(existing: string, overlay: string): string {
   return existing.trimEnd() + "\n\n" + block + "\n";
 }
 
-function resolveHome(filePath: string): string {
-  if (filePath.startsWith("~/")) {
-    return path.join(process.env.HOME ?? "/root", filePath.slice(2));
-  }
-  return filePath;
-}
-
 export class ClaudeCodeConnector implements Connector {
   readonly id = "claude-code";
   readonly label = "Claude Code";
@@ -30,7 +25,7 @@ export class ClaudeCodeConnector implements Connector {
   private memoryPath: string;
 
   constructor(memoryPath?: string) {
-    this.memoryPath = resolveHome(
+    this.memoryPath = resolveConfiguredPath(
       memoryPath ?? process.env.TRAITMIXER_CLAUDECODE_PATH ?? ""
     );
   }
@@ -61,6 +56,7 @@ export class ClaudeCodeConnector implements Connector {
     }
 
     try {
+      const { changed, overlay: safeOverlay } = sanitizeOverlayForConstrainedModels(overlay);
       const dir = path.dirname(this.memoryPath);
       if (!fs.existsSync(dir)) {
         fs.mkdirSync(dir, { recursive: true });
@@ -68,8 +64,12 @@ export class ClaudeCodeConnector implements Connector {
       const existing = fs.existsSync(this.memoryPath)
         ? fs.readFileSync(this.memoryPath, "utf-8")
         : "";
-      fs.writeFileSync(this.memoryPath, injectOverlay(existing, overlay), "utf-8");
-      return { success: true, target: this.id, message: `Written to ${this.memoryPath}` };
+      fs.writeFileSync(this.memoryPath, injectOverlay(existing, safeOverlay), "utf-8");
+      return {
+        success: true,
+        target: this.id,
+        message: `Written to ${this.memoryPath}${changed ? " (safety wording adjusted for constrained models)" : ""}`,
+      };
     } catch (err) {
       return {
         success: false,

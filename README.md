@@ -69,6 +69,8 @@ Then open:
 | `pnpm test:core` | Runs compiler tests |
 | `pnpm test:ui` | Runs UI tests |
 | `pnpm typecheck` | Runs TypeScript project checks |
+| `pnpm verify` | Runs tests, typecheck, and builds all packages |
+| `pnpm start` | Starts the local push server |
 
 ## Architecture
 
@@ -97,6 +99,29 @@ For Claude Code specifically, point `TRAITMIXER_CLAUDECODE_PATH` at the project 
 
 - `~/my-project/CLAUDE.md`
 - `~/my-project/.claude/CLAUDE.md`
+
+Relative file paths in `.env` are resolved from the repository root so `./CLAUDE.md` behaves predictably.
+
+## Deployment Notes
+
+TraitMixer has two deployable pieces:
+
+- the UI built by Vite in `packages/ui/dist`
+- the local push API in `packages/server`
+
+Before deploying, run:
+
+```bash
+pnpm install
+pnpm verify
+```
+
+For browser deployments, set:
+
+- `VITE_TRAITMIXER_API_URL` to the public API base URL
+- `TRAITMIXER_ALLOWED_ORIGINS` to the allowed UI origin list for the server
+
+For file-based connectors, configure the relevant target paths in `.env`.
 
 See [ARCHITECTURE.md](docs/personality-lab/ARCHITECTURE.md) for the current mental model.
 

@@ -7,6 +7,7 @@ import type { PersonalityTarget } from "./personality-panel.js";
 import { FALLBACK_TARGETS, type TargetPushResult, type TargetStatus } from "./targets.js";
 
 export const AGENT_ID = "demo";
+const API_BASE_URL = (import.meta.env.VITE_TRAITMIXER_API_URL ?? "http://localhost:4400").replace(/\/$/, "");
 
 export const INITIAL_CONFIG: TraitMixerConfig = {
   agents: {
@@ -137,7 +138,7 @@ export async function loadTargets() {
   updateState({ targetsLoading: true });
 
   try {
-    const response = await fetch("http://localhost:4400/api/targets");
+    const response = await fetch(`${API_BASE_URL}/api/targets`);
     if (!response.ok) {
       throw new Error(`Target lookup failed: ${response.status}`);
     }
@@ -227,7 +228,7 @@ export async function pushSelectedTargets() {
   updateState({ pushResults: [], pushing: true, targetMenuOpen: false });
 
   try {
-    const response = await fetch("http://localhost:4400/api/push", {
+    const response = await fetch(`${API_BASE_URL}/api/push`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({

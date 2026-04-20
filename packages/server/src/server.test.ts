@@ -29,6 +29,7 @@ describe("TraitMixer Server", () => {
     const data = await res.json();
     expect(data.status).toBe("ok");
     expect(typeof data.targets).toBe("number");
+    expect(data).toHaveProperty("allowedOrigins");
   });
 
   it("lists target connectors via GET /api/targets", async () => {
