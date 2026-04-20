@@ -59,6 +59,8 @@ Then open:
 
 `Compatibility Mode` is enabled in the UI by default. It softens the riskiest flirting/content-rating wording before push so stricter models like Codex/OpenAI targets are less likely to refuse or go weird.
 
+`Context Weight` lets you choose how much prompt baggage TraitMixer adds. Use `Lite` when OpenClaw or another target is already carrying a heavy base context, `Balanced` for the normal default, and `Rich` when you want stronger tone framing and can afford the extra prompt space.
+
 ## Commands
 
 | Command | What it does |
@@ -96,6 +98,7 @@ TraitMixer reads personality config from plain data structures and compiles a pr
 - default personality traits
 - per-agent trait overrides
 - per-channel delivery overrides
+- one of three overlay weights: `lite`, `balanced`, or `rich`
 
 For Claude Code specifically, point `TRAITMIXER_CLAUDECODE_PATH` at the project memory file TraitMixer should manage, for example:
 

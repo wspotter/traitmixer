@@ -1,4 +1,9 @@
-import type { PersonalityConfig, PersonalityTraits, TraitMixerConfig } from "./types.js";
+import type {
+  OverlayContextWeight,
+  PersonalityConfig,
+  PersonalityTraits,
+  TraitMixerConfig,
+} from "./types.js";
 
 function compactObject<T extends Record<string, unknown>>(value: T | undefined): T | undefined {
   if (!value) return undefined;
@@ -54,13 +59,26 @@ function interpretSlider(name: string, value: number, labels: [string, string, s
   return `- ${name}: ${value}% (${label})`;
 }
 
+function buildInstructionLine(contextWeight: OverlayContextWeight): string | undefined {
+  if (contextWeight === "lite") {
+    return undefined;
+  }
+
+  if (contextWeight === "rich") {
+    return "INSTRUCTION: Treat these settings as a steady voice-and-tone brief for every reply. Keep the behavior consistent, but never use personality to hide weak evidence or fake certainty.";
+  }
+
+  return "INSTRUCTION: Adopt the above personality traits strictly. The percentages indicate the intensity of each trait on a scale from 0 to 100.";
+}
+
 export function compilePersonalityOverlay(
   input?: PersonalityConfig | { personality?: PersonalityConfig; runtimeChannel?: string },
-  options?: { channel?: string }
+  options?: { channel?: string; contextWeight?: OverlayContextWeight }
 ): string | undefined {
   const isWrapped = input && typeof input === "object" && "personality" in input;
   const personality = isWrapped ? (input as any).personality : input;
   const runtimeChannel = isWrapped ? (input as any).runtimeChannel : options?.channel;
+  const contextWeight = options?.contextWeight ?? "balanced";
 
   if (!personality || personality.enabled === false) return undefined;
 
@@ -118,8 +136,11 @@ export function compilePersonalityOverlay(
 
   if (lines.length === 1) return undefined;
 
-  lines.push("");
-  lines.push("INSTRUCTION: Adopt the above personality traits strictly. The percentages indicate the intensity of each trait on a scale from 0 to 100.");
+  const instructionLine = buildInstructionLine(contextWeight);
+  if (instructionLine) {
+    lines.push("");
+    lines.push(instructionLine);
+  }
 
   return lines.join("\n");
 }
@@ -128,7 +149,11 @@ export function compilePersonalityOverlayForAgent(params: {
   cfg?: TraitMixerConfig;
   agentId?: string;
   runtimeChannel?: string;
+  contextWeight?: OverlayContextWeight;
 }): string | undefined {
   const personality = resolvePersonalityConfig(params.cfg, params.agentId);
-  return compilePersonalityOverlay(personality, { channel: params.runtimeChannel });
+  return compilePersonalityOverlay(personality, {
+    channel: params.runtimeChannel,
+    contextWeight: params.contextWeight,
+  });
 }

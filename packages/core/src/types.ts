@@ -20,6 +20,8 @@ export type PersonalityConfig = {
   channels?: Record<string, Partial<PersonalityTraits>>;
 };
 
+export type OverlayContextWeight = "lite" | "balanced" | "rich";
+
 export type TraitMixerConfig = {
   agents?: {
     defaults?: {

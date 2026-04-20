@@ -93,6 +93,7 @@ function renderApp() {
             compatibilityMode: state.compatibilityMode,
             onPush: pushSelectedTargets,
             onRefreshTargets: loadTargets,
+            contextWeight: state.contextWeight,
             target: state.target,
             pushResults: state.pushResults,
             pushing: state.pushing,
@@ -106,9 +107,13 @@ function renderApp() {
             onCompatibilityModeChange: (compatibilityMode) => {
               updateState({ compatibilityMode, pushResults: [] });
             },
+            onContextWeightChange: (contextWeight) => {
+              updateState({ contextWeight, pushResults: [] });
+            },
             onReset: () => {
               updateState({
                 channel: "*",
+                contextWeight: "balanced",
                 configDirty: false,
                 configForm: structuredClone(INITIAL_CONFIG),
                 pushResults: [],

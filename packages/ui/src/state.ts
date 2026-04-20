@@ -1,6 +1,7 @@
 import {
   compilePersonalityOverlay,
   resolvePersonalityConfig,
+  type OverlayContextWeight,
   type TraitMixerConfig,
 } from "traitmixer-core";
 import type { PersonalityTarget } from "./personality-panel.js";
@@ -23,6 +24,7 @@ function resolveApiBaseUrl(): string {
 
 const API_BASE_URL = resolveApiBaseUrl();
 const COMPATIBILITY_MODE_STORAGE_KEY = "traitmixer_compatibility_mode";
+const CONTEXT_WEIGHT_STORAGE_KEY = "traitmixer_context_weight";
 
 export const INITIAL_CONFIG: TraitMixerConfig = {
   agents: {
@@ -51,6 +53,7 @@ export type AppState = {
   compatibilityMode: boolean;
   configDirty: boolean;
   configForm: TraitMixerConfig;
+  contextWeight: OverlayContextWeight;
   pushResults: TargetPushResult[];
   pushing: boolean;
   targetActions: Record<string, TargetAction>;
@@ -109,6 +112,7 @@ export let state: AppState = {
   compatibilityMode: localStorage.getItem(COMPATIBILITY_MODE_STORAGE_KEY) !== "false",
   configDirty: false,
   configForm: structuredClone(INITIAL_CONFIG),
+  contextWeight: (localStorage.getItem(CONTEXT_WEIGHT_STORAGE_KEY) as OverlayContextWeight) || "balanced",
   pushResults: [],
   pushing: false,
   targetActions: defaultTargetActions(FALLBACK_TARGETS),
@@ -124,6 +128,9 @@ export function updateState(newState: Partial<AppState>) {
   }
   if (newState.compatibilityMode !== undefined) {
     localStorage.setItem(COMPATIBILITY_MODE_STORAGE_KEY, String(newState.compatibilityMode));
+  }
+  if (newState.contextWeight) {
+    localStorage.setItem(CONTEXT_WEIGHT_STORAGE_KEY, newState.contextWeight);
   }
   state = { ...state, ...newState };
   emit();
@@ -229,6 +236,7 @@ export async function pushSelectedTargets() {
   const personality = resolvePersonalityConfig(state.configForm, AGENT_ID);
   const rawOverlay = compilePersonalityOverlay(personality, {
     channel: state.channel === "*" ? undefined : state.channel,
+    contextWeight: state.contextWeight,
   });
   const overlay = rawOverlay ?? "";
 

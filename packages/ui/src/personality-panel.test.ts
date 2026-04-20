@@ -27,8 +27,10 @@ describe("UI Panel Tests", () => {
         compatibilityMode: true,
         configDirty: false,
         configForm: baseConfig,
+        contextWeight: "balanced",
         onChannelChange: vi.fn(),
         onCompatibilityModeChange: vi.fn(),
+        onContextWeightChange: vi.fn(),
         onFieldChange: vi.fn(),
         onPush: vi.fn(),
         onRefreshTargets: vi.fn(),
@@ -50,5 +52,7 @@ describe("UI Panel Tests", () => {
     expect(checkbox).not.toBeNull();
     expect(checkbox?.checked).toBe(true);
     expect(host.textContent).toContain("Compatibility Mode");
+    expect(host.textContent).toContain("Context Weight");
+    expect(host.textContent).toContain("Balanced");
   });
 });

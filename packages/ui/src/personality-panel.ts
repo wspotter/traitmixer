@@ -1,5 +1,9 @@
 import { html } from "lit";
-import { type TraitMixerConfig, type PersonalityTraits } from "traitmixer-core";
+import {
+  type OverlayContextWeight,
+  type TraitMixerConfig,
+  type PersonalityTraits,
+} from "traitmixer-core";
 
 export type PersonalityTarget = "agent" | "defaults";
 
@@ -25,8 +29,10 @@ type PanelParams = {
   compatibilityMode: boolean;
   configDirty: boolean;
   configForm: TraitMixerConfig | null;
+  contextWeight: OverlayContextWeight;
   onChannelChange: (channel: string) => void;
   onCompatibilityModeChange: (enabled: boolean) => void;
+  onContextWeightChange: (contextWeight: OverlayContextWeight) => void;
   onFieldChange: (args: { path: string[]; target: PersonalityTarget; value: unknown }) => void;
   onPush: () => void;
   onRefreshTargets: () => void;
@@ -48,6 +54,16 @@ const CHANNELS = [
   { key: "signal", label: "Signal" },
   { key: "dashboard", label: "Dashboard" },
   { key: "support", label: "Support" },
+];
+
+const CONTEXT_WEIGHTS: Array<{
+  key: OverlayContextWeight;
+  label: string;
+  description: string;
+}> = [
+  { key: "lite", label: "Lite", description: "Shortest overlay, least baggage." },
+  { key: "balanced", label: "Balanced", description: "Default mix of clarity and weight." },
+  { key: "rich", label: "Rich", description: "Stronger persona framing, more context." },
 ];
 
 const TRAITS = [
@@ -422,6 +438,35 @@ export function renderAgentPersonality(params: PanelParams) {
         border: 1px solid rgba(255, 255, 255, 0.08);
         background: rgba(255, 255, 255, 0.03);
         max-width: 360px;
+      }
+
+      .control-stack {
+        display: grid;
+        gap: 12px;
+        justify-items: start;
+      }
+
+      .context-weight {
+        display: grid;
+        gap: 8px;
+      }
+
+      .context-weight-copy {
+        display: grid;
+        gap: 3px;
+      }
+
+      .context-weight-copy strong {
+        font-size: 0.75rem;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: rgba(239, 231, 217, 0.9);
+      }
+
+      .context-weight-copy span {
+        font-size: 0.72rem;
+        line-height: 1.45;
+        color: rgba(239, 231, 217, 0.64);
       }
 
       .compatibility-toggle input {
@@ -812,18 +857,39 @@ export function renderAgentPersonality(params: PanelParams) {
             `,
           )}
         </div>
-        <label class="compatibility-toggle">
-          <input
-            type="checkbox"
-            .checked=${params.compatibilityMode}
-            @change=${(event: Event) =>
-              params.onCompatibilityModeChange((event.target as HTMLInputElement).checked)}
-          />
-          <div>
-            <strong>Compatibility Mode</strong>
-            <span>Softens risky flirting and rating wording before push.</span>
+        <div class="control-stack">
+          <div class="context-weight">
+            <div class="context-weight-copy">
+              <strong>Context Weight</strong>
+              <span>${CONTEXT_WEIGHTS.find((option) => option.key === params.contextWeight)?.description}</span>
+            </div>
+            <div class="segment">
+              ${CONTEXT_WEIGHTS.map(
+                (option) => html`
+                  <button
+                    class=${params.contextWeight === option.key ? "active" : ""}
+                    @click=${() => params.onContextWeightChange(option.key)}
+                  >
+                    ${option.label}
+                  </button>
+                `,
+              )}
+            </div>
           </div>
-        </label>
+
+          <label class="compatibility-toggle">
+            <input
+              type="checkbox"
+              .checked=${params.compatibilityMode}
+              @change=${(event: Event) =>
+                params.onCompatibilityModeChange((event.target as HTMLInputElement).checked)}
+            />
+            <div>
+              <strong>Compatibility Mode</strong>
+              <span>Softens risky flirting and rating wording before push.</span>
+            </div>
+          </label>
+          </div>
       </div>
 
       ${params.pushResults.length > 0

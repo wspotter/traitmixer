@@ -38,6 +38,36 @@ describe("TraitMixer Compiler", () => {
     expect(overlay).toMatch(/Verbosity: 0%/);
   });
 
+  it("drops the trailing instruction block in lite mode", () => {
+    const overlay = compilePersonalityOverlay(
+      {
+        traits: {
+          humor: 80,
+          empathy: 70,
+        },
+      },
+      { contextWeight: "lite" },
+    );
+
+    expect(overlay).toMatch(/Humor: 80%/);
+    expect(overlay).not.toMatch(/INSTRUCTION:/);
+  });
+
+  it("uses a fuller instruction line in rich mode", () => {
+    const overlay = compilePersonalityOverlay(
+      {
+        traits: {
+          humor: 80,
+          empathy: 70,
+        },
+      },
+      { contextWeight: "rich" },
+    );
+
+    expect(overlay).toMatch(/steady voice-and-tone brief/);
+    expect(overlay).toMatch(/never use personality to hide weak evidence/);
+  });
+
   it("resolves through 3 variable levels: defaults, agent, and channel overrides", () => {
     const config = {
       agents: {
