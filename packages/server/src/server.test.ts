@@ -79,6 +79,7 @@ describe("TraitMixer Server", () => {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ 
         overlay: "test-overlay", 
+        compatibilityMode: false,
         targets: ["agent-zero"], 
         uninstall: ["claude-code"] 
       }),
@@ -88,6 +89,21 @@ describe("TraitMixer Server", () => {
     const data = await res.json() as { results: any[] };
     expect(Array.isArray(data.results)).toBe(true);
     expect(data.results.length).toBeGreaterThanOrEqual(2);
+  });
+
+  it("rejects invalid compatibility mode flags", async () => {
+    const res = await fetch(`http://localhost:${port}/api/push`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        overlay: "test-overlay",
+        compatibilityMode: "yes please",
+      }),
+    });
+
+    expect(res.status).toBe(400);
+    const data = await res.json();
+    expect(data.error).toMatch(/compatibilityMode/);
   });
 
   it("rejects disallowed browser origins when an allowlist is configured", async () => {

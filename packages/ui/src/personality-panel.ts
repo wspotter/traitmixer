@@ -22,9 +22,11 @@ type PanelParams = {
   agentId: string;
   availableTargets: TargetStatus[];
   channel: string;
+  compatibilityMode: boolean;
   configDirty: boolean;
   configForm: TraitMixerConfig | null;
   onChannelChange: (channel: string) => void;
+  onCompatibilityModeChange: (enabled: boolean) => void;
   onFieldChange: (args: { path: string[]; target: PersonalityTarget; value: unknown }) => void;
   onPush: () => void;
   onRefreshTargets: () => void;
@@ -66,24 +68,24 @@ const TRAITS = [
 
 const PRESETS: Array<{ name: string; traits: Partial<PersonalityTraits> }> = [
   {
-    name: "Founder Mode",
-    traits: { confidence: 92, directness: 86, optimism: 80, verbosity: 26, humor: 54 },
+    name: "Cheerful Companion",
+    traits: { empathy: 82, optimism: 84, humor: 46, directness: 48, verbosity: 52, formality: 18, rating: 4 },
   },
   {
-    name: "Support Lead",
-    traits: { empathy: 92, caution: 74, directness: 56, humor: 20, rating: 2 },
+    name: "Calm Confidant",
+    traits: { empathy: 92, caution: 72, directness: 38, confidence: 56, optimism: 64, verbosity: 50, rating: 2 },
   },
   {
-    name: "Deadpan Analyst",
-    traits: { humor: 12, directness: 88, verbosity: 18, complexity: 70, sarcasm: 18 },
+    name: "Witty Bestie",
+    traits: { humor: 74, empathy: 72, optimism: 76, creativity: 60, sarcasm: 22, directness: 46, verbosity: 54, rating: 8 },
   },
   {
-    name: "Warm Operator",
-    traits: { empathy: 86, confidence: 68, formality: 42, directness: 64, optimism: 72 },
+    name: "Thoughtful Co-Pilot",
+    traits: { empathy: 74, confidence: 70, directness: 58, optimism: 70, verbosity: 40, complexity: 34, rating: 4 },
   },
   {
-    name: "Launch Goblin",
-    traits: { humor: 72, creativity: 76, confidence: 90, optimism: 88, sarcasm: 24 },
+    name: "Midnight Friend",
+    traits: { empathy: 86, humor: 34, optimism: 62, directness: 34, verbosity: 68, creativity: 58, formality: 16, rating: 4 },
   },
 ];
 
@@ -411,6 +413,38 @@ export function renderAgentPersonality(params: PanelParams) {
         flex-wrap: wrap;
       }
 
+      .compatibility-toggle {
+        display: inline-flex;
+        align-items: flex-start;
+        gap: 10px;
+        padding: 10px 14px;
+        border-radius: 16px;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        background: rgba(255, 255, 255, 0.03);
+        max-width: 360px;
+      }
+
+      .compatibility-toggle input {
+        margin: 2px 0 0;
+        accent-color: #ff8a3d;
+      }
+
+      .compatibility-toggle strong {
+        display: block;
+        font-size: 0.75rem;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: rgba(239, 231, 217, 0.9);
+      }
+
+      .compatibility-toggle span {
+        display: block;
+        margin-top: 3px;
+        font-size: 0.72rem;
+        line-height: 1.45;
+        color: rgba(239, 231, 217, 0.64);
+      }
+
       .segment,
       .channel-strip {
         display: inline-flex;
@@ -572,10 +606,6 @@ export function renderAgentPersonality(params: PanelParams) {
         display: flex;
         gap: 10px;
         flex-wrap: wrap;
-      }
-
-      .utility-button {
-        color: #ffddc1;
       }
 
       .result-list {
@@ -743,8 +773,6 @@ export function renderAgentPersonality(params: PanelParams) {
         </div>
       </div>
 
-
-
       <div class="board">
         <div class="fader-grid">
           ${TRAITS.map((trait) => html`
@@ -784,6 +812,18 @@ export function renderAgentPersonality(params: PanelParams) {
             `,
           )}
         </div>
+        <label class="compatibility-toggle">
+          <input
+            type="checkbox"
+            .checked=${params.compatibilityMode}
+            @change=${(event: Event) =>
+              params.onCompatibilityModeChange((event.target as HTMLInputElement).checked)}
+          />
+          <div>
+            <strong>Compatibility Mode</strong>
+            <span>Softens risky flirting and rating wording before push.</span>
+          </div>
+        </label>
       </div>
 
       ${params.pushResults.length > 0

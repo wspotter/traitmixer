@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { sanitizeOverlayForConstrainedModels } from "./overlay-policy.js";
+import {
+  applyConstrainedModelCompatibility,
+  sanitizeOverlayForConstrainedModels,
+} from "./overlay-policy.js";
 
 describe("sanitizeOverlayForConstrainedModels", () => {
   it("rewrites high-risk flirting and rating labels for constrained models", () => {
@@ -31,6 +34,19 @@ describe("sanitizeOverlayForConstrainedModels", () => {
     ].join("\n");
 
     const result = sanitizeOverlayForConstrainedModels(rawOverlay);
+
+    expect(result.changed).toBe(false);
+    expect(result.overlay).toBe(rawOverlay);
+  });
+
+  it("leaves risky overlays untouched when compatibility mode is disabled", () => {
+    const rawOverlay = [
+      "### Personality & Tone Mixer Settings",
+      "- Flirting: 100% (Shamelessly Flirty/Sexy)",
+      "- Content Rating: 100% (XXX (Unrestricted, NSFW, Explicit allowed))",
+    ].join("\n");
+
+    const result = applyConstrainedModelCompatibility(rawOverlay, false);
 
     expect(result.changed).toBe(false);
     expect(result.overlay).toBe(rawOverlay);

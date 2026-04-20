@@ -59,7 +59,7 @@ export const FALLBACK_TARGETS: TargetStatus[] = [
     label: "OpenClaw",
     type: "file",
     configured: false,
-    description: "Not configured",
-    setupHint: "Need workspace config path",
+    description: "~/.openclaw/workspace or ~/.openclaw/workspace/SOUL.md",
+    setupHint: "Need workspace path or SOUL.md path",
   },
 ];

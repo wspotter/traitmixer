@@ -93,9 +93,14 @@ export const server = http.createServer(async (req, res) => {
         overlay: string;
         targets?: string[];
         uninstall?: string[];
+        compatibilityMode?: boolean;
       };
       if (typeof body.overlay !== "string") {
         json(res, 400, { error: "Missing or invalid 'overlay' string in request body" }, origin);
+        return;
+      }
+      if (body.compatibilityMode !== undefined && typeof body.compatibilityMode !== "boolean") {
+        json(res, 400, { error: "Invalid 'compatibilityMode' flag in request body" }, origin);
         return;
       }
 
@@ -109,7 +114,7 @@ export const server = http.createServer(async (req, res) => {
           results.push({ success: false, target: id, message: `Unknown push target: ${id}` });
           continue;
         }
-        results.push(await connector.push(body.overlay));
+        results.push(await connector.push(body.overlay, { compatibilityMode: body.compatibilityMode }));
       }
 
       for (const id of uninstallIds) {

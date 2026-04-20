@@ -40,7 +40,7 @@ Same prompt:
 | [AnythingLLM](https://github.com/Mintplex-Labs/anything-llm) | HTTP API | Updates workspace prompt |
 | [Hermes Agent](https://github.com/NousResearch/hermes-agent) | File write | Injects into `SOUL.md` |
 | [Agent Zero](https://github.com/agent0ai/agent-zero) | File write | Injects into `agent.system.md` |
-| [OpenClaw](https://github.com/openclaw/openclaw) | File write | Updates workspace config |
+| [OpenClaw](https://github.com/openclaw/openclaw) | File write | Updates workspace `SOUL.md` by default (or another chosen bootstrap file) |
 | [Claude Code](https://code.claude.com/docs/en/memory) | File write | Injects into `CLAUDE.md` or `.claude/CLAUDE.md` |
 
 ## Quick start
@@ -102,6 +102,16 @@ For Claude Code specifically, point `TRAITMIXER_CLAUDECODE_PATH` at the project 
 
 Relative file paths in `.env` are resolved from the repository root so `./CLAUDE.md` behaves predictably.
 
+For OpenClaw, point `TRAITMIXER_OPENCLAW_WORKSPACE_PATH` at the active workspace directory when possible. TraitMixer resolves workspace paths to `SOUL.md` automatically, which matches OpenClaw's documented personality/tone file.
+
+- `~/.openclaw/workspace`
+- `~/.openclaw/workspace-ollie`
+- `~/.openclaw/workspace/SOUL.md`
+
+If you intentionally target a different bootstrap file, `TRAITMIXER_OPENCLAW_CONFIG_PATH` still works as a legacy explicit-file alias.
+
+TraitMixer only manages the workspace bootstrap file it writes to, not the separate OpenClaw agent config in `~/.openclaw/openclaw.json`. For OpenAI/Codex-style agents, TraitMixer automatically softens the riskiest flirting/content-rating labels and adds a non-explicit compatibility note when needed, so most users should not have to hand-edit their OpenClaw install just to use high sliders. If an existing agent already has explicit persona text baked into its own OpenClaw identity config, that remains user-owned and may still need one cleanup pass.
+
 ## Deployment Notes
 
 TraitMixer has two deployable pieces:
@@ -122,6 +132,8 @@ For browser deployments, set:
 - `TRAITMIXER_ALLOWED_ORIGINS` to the allowed UI origin list for the server
 
 For file-based connectors, configure the relevant target paths in `.env`.
+
+For OpenClaw specifically, make sure you point TraitMixer at the active workspace from your OpenClaw config, not an old `~/openclaw` folder left over from older installs.
 
 Outside local development, the browser app should not assume `localhost`. If `VITE_TRAITMIXER_API_URL` is unset, the UI falls back to same-origin requests.
 

@@ -1,5 +1,5 @@
-import type { Connector, PushResult, ConnectorConfig } from "./types.js";
-import { sanitizeOverlayForConstrainedModels } from "./overlay-policy.js";
+import type { Connector, PushResult, ConnectorConfig, PushOptions } from "./types.js";
+import { applyConstrainedModelCompatibility } from "./overlay-policy.js";
 
 export class AnythingLLMConnector implements Connector {
   readonly id = "anythingllm";
@@ -31,12 +31,15 @@ export class AnythingLLMConnector implements Connector {
     };
   }
 
-  async push(overlay: string): Promise<PushResult> {
+  async push(overlay: string, options?: PushOptions): Promise<PushResult> {
     if (!this.isConfigured()) {
       return { success: false, target: this.id, message: "Set TRAITMIXER_ANYTHINGLLM_URL, TRAITMIXER_ANYTHINGLLM_API_KEY, and TRAITMIXER_ANYTHINGLLM_WORKSPACE" };
     }
     try {
-      const { changed, overlay: safeOverlay } = sanitizeOverlayForConstrainedModels(overlay);
+      const { changed, overlay: safeOverlay } = applyConstrainedModelCompatibility(
+        overlay,
+        options?.compatibilityMode !== false,
+      );
       const res = await fetch(
         `${this.baseUrl}/api/v1/workspace/${encodeURIComponent(this.workspaceSlug)}/update`,
         {

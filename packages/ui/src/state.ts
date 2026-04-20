@@ -22,6 +22,7 @@ function resolveApiBaseUrl(): string {
 }
 
 const API_BASE_URL = resolveApiBaseUrl();
+const COMPATIBILITY_MODE_STORAGE_KEY = "traitmixer_compatibility_mode";
 
 export const INITIAL_CONFIG: TraitMixerConfig = {
   agents: {
@@ -47,6 +48,7 @@ export type AppState = {
   theme: "system" | "light" | "neutral" | "dark";
   availableTargets: TargetStatus[];
   channel: string;
+  compatibilityMode: boolean;
   configDirty: boolean;
   configForm: TraitMixerConfig;
   pushResults: TargetPushResult[];
@@ -104,6 +106,7 @@ export let state: AppState = {
   theme: (localStorage.getItem("traitmixer_theme") as AppState["theme"]) || "system",
   availableTargets: FALLBACK_TARGETS,
   channel: "*",
+  compatibilityMode: localStorage.getItem(COMPATIBILITY_MODE_STORAGE_KEY) !== "false",
   configDirty: false,
   configForm: structuredClone(INITIAL_CONFIG),
   pushResults: [],
@@ -118,6 +121,9 @@ export let state: AppState = {
 export function updateState(newState: Partial<AppState>) {
   if (newState.theme) {
     localStorage.setItem("traitmixer_theme", newState.theme);
+  }
+  if (newState.compatibilityMode !== undefined) {
+    localStorage.setItem(COMPATIBILITY_MODE_STORAGE_KEY, String(newState.compatibilityMode));
   }
   state = { ...state, ...newState };
   emit();
@@ -246,6 +252,7 @@ export async function pushSelectedTargets() {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
+        compatibilityMode: state.compatibilityMode,
         overlay,
         targets: pushTargets,
         uninstall: clearTargets,

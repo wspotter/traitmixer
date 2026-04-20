@@ -5,6 +5,10 @@ export type PushResult = {
   detail?: string;
 };
 
+export type PushOptions = {
+  compatibilityMode?: boolean;
+};
+
 export type ConnectorConfig = {
   id: string;
   label: string;
@@ -21,6 +25,6 @@ export interface Connector {
   readonly description: string;
   isConfigured(): boolean;
   info(): ConnectorConfig;
-  push(overlay: string): Promise<PushResult>;
+  push(overlay: string, options?: PushOptions): Promise<PushResult>;
   uninstall(): Promise<PushResult>;
 }

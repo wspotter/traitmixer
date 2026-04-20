@@ -1,8 +1,8 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
-import type { Connector, PushResult, ConnectorConfig } from "./types.js";
+import type { Connector, PushResult, ConnectorConfig, PushOptions } from "./types.js";
 import { injectManagedOverlay, removeManagedOverlay } from "./overlay-block.js";
-import { sanitizeOverlayForConstrainedModels } from "./overlay-policy.js";
+import { applyConstrainedModelCompatibility } from "./overlay-policy.js";
 import { resolveConfiguredPath } from "./path-utils.js";
 
 export class HermesConnector implements Connector {
@@ -33,12 +33,15 @@ export class HermesConnector implements Connector {
     };
   }
 
-  async push(overlay: string): Promise<PushResult> {
+  async push(overlay: string, options?: PushOptions): Promise<PushResult> {
     if (!this.isConfigured()) {
       return { success: false, target: this.id, message: "TRAITMIXER_HERMES_SOUL_PATH not set" };
     }
     try {
-      const { changed, overlay: safeOverlay } = sanitizeOverlayForConstrainedModels(overlay);
+      const { changed, overlay: safeOverlay } = applyConstrainedModelCompatibility(
+        overlay,
+        options?.compatibilityMode !== false,
+      );
       const dir = path.dirname(this.soulPath);
       if (!fs.existsSync(dir)) {
         fs.mkdirSync(dir, { recursive: true });

@@ -1,5 +1,5 @@
-import type { Connector, PushResult, ConnectorConfig } from "./types.js";
-import { sanitizeOverlayForConstrainedModels } from "./overlay-policy.js";
+import type { Connector, PushResult, ConnectorConfig, PushOptions } from "./types.js";
+import { applyConstrainedModelCompatibility } from "./overlay-policy.js";
 
 export class OpenWebUIConnector implements Connector {
   readonly id = "open-webui";
@@ -31,12 +31,15 @@ export class OpenWebUIConnector implements Connector {
     };
   }
 
-  async push(overlay: string): Promise<PushResult> {
+  async push(overlay: string, options?: PushOptions): Promise<PushResult> {
     if (!this.isConfigured()) {
       return { success: false, target: this.id, message: "Set TRAITMIXER_OPENWEBUI_URL, TRAITMIXER_OPENWEBUI_API_KEY, and TRAITMIXER_OPENWEBUI_MODEL_ID" };
     }
     try {
-      const { changed, overlay: safeOverlay } = sanitizeOverlayForConstrainedModels(overlay);
+      const { changed, overlay: safeOverlay } = applyConstrainedModelCompatibility(
+        overlay,
+        options?.compatibilityMode !== false,
+      );
       // First get current model config
       const getRes = await fetch(`${this.baseUrl}/api/v1/models/${encodeURIComponent(this.modelId)}`, {
         headers: { Authorization: `Bearer ${this.apiKey}` },

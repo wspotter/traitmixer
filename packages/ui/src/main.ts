@@ -90,6 +90,7 @@ function renderApp() {
             configDirty: state.configDirty,
             configForm: state.configForm,
             channel: state.channel,
+            compatibilityMode: state.compatibilityMode,
             onPush: pushSelectedTargets,
             onRefreshTargets: loadTargets,
             target: state.target,
@@ -102,6 +103,9 @@ function renderApp() {
               updateState({ channel, pushResults: [] });
             },
             onFieldChange: updateField,
+            onCompatibilityModeChange: (compatibilityMode) => {
+              updateState({ compatibilityMode, pushResults: [] });
+            },
             onReset: () => {
               updateState({
                 channel: "*",
