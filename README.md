@@ -64,7 +64,7 @@ Then open:
 | `pnpm dev` | Runs the UI and local push server |
 | `pnpm dev:ui` | Runs only the UI |
 | `pnpm dev:server` | Runs only the push server |
-| `pnpm build` | Builds the UI |
+| `pnpm build` | Builds all workspace packages |
 | `pnpm test` | Runs all tests |
 | `pnpm test:core` | Runs compiler tests |
 | `pnpm test:ui` | Runs UI tests |
@@ -118,10 +118,12 @@ pnpm verify
 
 For browser deployments, set:
 
-- `VITE_TRAITMIXER_API_URL` to the public API base URL
+- `VITE_TRAITMIXER_API_URL` to the public API base URL if the UI is not reverse-proxied to the same origin as the server
 - `TRAITMIXER_ALLOWED_ORIGINS` to the allowed UI origin list for the server
 
 For file-based connectors, configure the relevant target paths in `.env`.
+
+Outside local development, the browser app should not assume `localhost`. If `VITE_TRAITMIXER_API_URL` is unset, the UI falls back to same-origin requests.
 
 See [ARCHITECTURE.md](docs/personality-lab/ARCHITECTURE.md) for the current mental model.
 

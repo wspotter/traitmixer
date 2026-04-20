@@ -17,6 +17,15 @@ function allowedOrigins(): string[] | "*" {
   return configured && configured.length > 0 ? configured : "*";
 }
 
+function isOriginAllowed(origin?: string): boolean {
+  const allowOrigin = allowedOrigins();
+  if (allowOrigin === "*" || !origin) {
+    return true;
+  }
+
+  return allowOrigin.includes(origin);
+}
+
 function corsHeaders(origin?: string): Record<string, string> {
   const allowOrigin = allowedOrigins();
   const resolvedOrigin =
@@ -24,17 +33,18 @@ function corsHeaders(origin?: string): Record<string, string> {
       ? "*"
       : origin && allowOrigin.includes(origin)
         ? origin
-        : allowOrigin[0];
+        : "";
 
   const headers: Record<string, string> = {
-    "Access-Control-Allow-Origin": "*",
     "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
     "Access-Control-Allow-Headers": "Content-Type",
     "Content-Type": "application/json",
   };
 
-  headers["Access-Control-Allow-Origin"] = resolvedOrigin;
-  if (resolvedOrigin !== "*") {
+  if (resolvedOrigin) {
+    headers["Access-Control-Allow-Origin"] = resolvedOrigin;
+  }
+  if (resolvedOrigin && resolvedOrigin !== "*") {
     headers.Vary = "Origin";
   }
 
@@ -56,6 +66,10 @@ async function readBody(req: http.IncomingMessage): Promise<string> {
 
 export const server = http.createServer(async (req, res) => {
   const origin = typeof req.headers.origin === "string" ? req.headers.origin : undefined;
+  if (!isOriginAllowed(origin)) {
+    json(res, 403, { error: "Origin not allowed" });
+    return;
+  }
 
   // CORS preflight
   if (req.method === "OPTIONS") {
@@ -135,7 +149,7 @@ export const server = http.createServer(async (req, res) => {
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   server.listen(PORT, () => {
-    console.log(`TraitMixer server listening on http://localhost:${PORT}`);
+    console.log(`TraitMixer server listening on port ${PORT}`);
     console.log("Configured targets:");
     for (const c of connectors) {
       const status = c.isConfigured() ? "✓ ready" : "✗ not configured";

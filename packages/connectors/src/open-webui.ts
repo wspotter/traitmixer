@@ -1,4 +1,5 @@
 import type { Connector, PushResult, ConnectorConfig } from "./types.js";
+import { sanitizeOverlayForConstrainedModels } from "./overlay-policy.js";
 
 export class OpenWebUIConnector implements Connector {
   readonly id = "open-webui";
@@ -35,6 +36,7 @@ export class OpenWebUIConnector implements Connector {
       return { success: false, target: this.id, message: "Set TRAITMIXER_OPENWEBUI_URL, TRAITMIXER_OPENWEBUI_API_KEY, and TRAITMIXER_OPENWEBUI_MODEL_ID" };
     }
     try {
+      const { changed, overlay: safeOverlay } = sanitizeOverlayForConstrainedModels(overlay);
       // First get current model config
       const getRes = await fetch(`${this.baseUrl}/api/v1/models/${encodeURIComponent(this.modelId)}`, {
         headers: { Authorization: `Bearer ${this.apiKey}` },
@@ -54,13 +56,17 @@ export class OpenWebUIConnector implements Connector {
         },
         body: JSON.stringify({
           ...model,
-          meta: { ...meta, system: overlay },
+          meta: { ...meta, system: safeOverlay },
         }),
       });
       if (!patchRes.ok) {
         return { success: false, target: this.id, message: `Update failed: ${patchRes.status} ${patchRes.statusText}` };
       }
-      return { success: true, target: this.id, message: `Updated model "${this.modelId}" system prompt` };
+      return {
+        success: true,
+        target: this.id,
+        message: `Updated model "${this.modelId}" system prompt${changed ? " (safety wording adjusted for constrained models)" : ""}`,
+      };
     } catch (err) {
       return { success: false, target: this.id, message: `Request failed: ${(err as Error).message}` };
     }

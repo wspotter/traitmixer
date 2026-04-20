@@ -7,7 +7,21 @@ import type { PersonalityTarget } from "./personality-panel.js";
 import { FALLBACK_TARGETS, type TargetPushResult, type TargetStatus } from "./targets.js";
 
 export const AGENT_ID = "demo";
-const API_BASE_URL = (import.meta.env.VITE_TRAITMIXER_API_URL ?? "http://localhost:4400").replace(/\/$/, "");
+
+function resolveApiBaseUrl(): string {
+  const configured = import.meta.env.VITE_TRAITMIXER_API_URL?.trim();
+  if (configured) {
+    return configured.replace(/\/$/, "");
+  }
+
+  if (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1") {
+    return "http://localhost:4400";
+  }
+
+  return window.location.origin.replace(/\/$/, "");
+}
+
+const API_BASE_URL = resolveApiBaseUrl();
 
 export const INITIAL_CONFIG: TraitMixerConfig = {
   agents: {
@@ -260,7 +274,7 @@ export async function pushSelectedTargets() {
         {
           success: false,
           target: "traitmixer",
-          message: "Could not reach the local push server on port 4400.",
+          message: `Could not reach the TraitMixer push API at ${API_BASE_URL}.`,
         },
       ],
       pushing: false,

@@ -1,20 +1,9 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
 import type { Connector, PushResult, ConnectorConfig } from "./types.js";
+import { injectManagedOverlay, removeManagedOverlay } from "./overlay-block.js";
+import { sanitizeOverlayForConstrainedModels } from "./overlay-policy.js";
 import { resolveConfiguredPath } from "./path-utils.js";
-
-const MARKER_START = "<!-- traitmixer:start -->";
-const MARKER_END = "<!-- traitmixer:end -->";
-
-function injectOverlay(existing: string, overlay: string): string {
-  const block = `${MARKER_START}\n${overlay}\n${MARKER_END}`;
-  const startIdx = existing.indexOf(MARKER_START);
-  const endIdx = existing.indexOf(MARKER_END);
-  if (startIdx !== -1 && endIdx !== -1) {
-    return existing.slice(0, startIdx) + block + existing.slice(endIdx + MARKER_END.length);
-  }
-  return existing.trimEnd() + "\n\n" + block + "\n";
-}
 
 export class HermesConnector implements Connector {
   readonly id = "hermes";
@@ -49,6 +38,7 @@ export class HermesConnector implements Connector {
       return { success: false, target: this.id, message: "TRAITMIXER_HERMES_SOUL_PATH not set" };
     }
     try {
+      const { changed, overlay: safeOverlay } = sanitizeOverlayForConstrainedModels(overlay);
       const dir = path.dirname(this.soulPath);
       if (!fs.existsSync(dir)) {
         fs.mkdirSync(dir, { recursive: true });
@@ -56,8 +46,12 @@ export class HermesConnector implements Connector {
       const existing = fs.existsSync(this.soulPath)
         ? fs.readFileSync(this.soulPath, "utf-8")
         : "";
-      fs.writeFileSync(this.soulPath, injectOverlay(existing, overlay), "utf-8");
-      return { success: true, target: this.id, message: `Written to ${this.soulPath}` };
+      fs.writeFileSync(this.soulPath, injectManagedOverlay(existing, safeOverlay), "utf-8");
+      return {
+        success: true,
+        target: this.id,
+        message: `Written to ${this.soulPath}${changed ? " (safety wording adjusted for constrained models)" : ""}`,
+      };
     } catch (err) {
       return { success: false, target: this.id, message: `Write failed: ${(err as Error).message}` };
     }
@@ -72,12 +66,10 @@ export class HermesConnector implements Connector {
         return { success: true, target: this.id, message: `Nothing to uninstall, file not found: ${this.soulPath}` };
       }
       const existing = fs.readFileSync(this.soulPath, "utf-8");
-      
-      const startIdx = existing.indexOf("<!-- traitmixer:start -->");
-      const endIdx = existing.indexOf("<!-- traitmixer:end -->");
-      if (startIdx !== -1 && endIdx !== -1) {
-         const cleaned = existing.slice(0, startIdx).trimEnd() + "\n\n" + existing.slice(endIdx + "<!-- traitmixer:end -->".length).trimStart();
-         fs.writeFileSync(this.soulPath, cleaned.trim() + "\n", "utf-8");
+
+      const removal = removeManagedOverlay(existing);
+      if (removal.changed) {
+         fs.writeFileSync(this.soulPath, removal.content, "utf-8");
          return { success: true, target: this.id, message: `Uninstalled from ${this.soulPath}` };
       }
       return { success: true, target: this.id, message: `No traits found in ${this.soulPath}` };

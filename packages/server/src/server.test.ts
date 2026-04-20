@@ -1,11 +1,16 @@
-import { describe, it, expect, beforeAll, afterAll } from "vitest";
-import { server } from "./server.js";
+import { describe, it, expect, beforeAll, afterAll, beforeEach, afterEach, vi } from "vitest";
 import * as http from "node:http";
 
 describe("TraitMixer Server", () => {
   let port: number;
+  let server: http.Server;
 
   beforeAll(async () => {
+    delete process.env.TRAITMIXER_ALLOWED_ORIGINS;
+    vi.resetModules();
+    const module = await import("./server.js");
+    server = module.server;
+
     return new Promise<void>((resolve) => {
       server.listen(0, () => {
         const address = server.address();
@@ -15,6 +20,14 @@ describe("TraitMixer Server", () => {
         resolve();
       });
     });
+  });
+
+  beforeEach(() => {
+    delete process.env.TRAITMIXER_ALLOWED_ORIGINS;
+  });
+
+  afterEach(() => {
+    delete process.env.TRAITMIXER_ALLOWED_ORIGINS;
   });
 
   afterAll(async () => {
@@ -75,5 +88,29 @@ describe("TraitMixer Server", () => {
     const data = await res.json() as { results: any[] };
     expect(Array.isArray(data.results)).toBe(true);
     expect(data.results.length).toBeGreaterThanOrEqual(2);
+  });
+
+  it("rejects disallowed browser origins when an allowlist is configured", async () => {
+    process.env.TRAITMIXER_ALLOWED_ORIGINS = "https://allowed.example";
+
+    const res = await fetch(`http://localhost:${port}/api/health`, {
+      headers: { Origin: "https://blocked.example" },
+    });
+
+    expect(res.status).toBe(403);
+    expect(res.headers.get("access-control-allow-origin")).toBeNull();
+    const data = await res.json();
+    expect(data.error).toMatch(/Origin not allowed/);
+  });
+
+  it("echoes an allowed origin when the request origin is in the allowlist", async () => {
+    process.env.TRAITMIXER_ALLOWED_ORIGINS = "https://allowed.example";
+
+    const res = await fetch(`http://localhost:${port}/api/health`, {
+      headers: { Origin: "https://allowed.example" },
+    });
+
+    expect(res.status).toBe(200);
+    expect(res.headers.get("access-control-allow-origin")).toBe("https://allowed.example");
   });
 });

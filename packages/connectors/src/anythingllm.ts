@@ -1,4 +1,5 @@
 import type { Connector, PushResult, ConnectorConfig } from "./types.js";
+import { sanitizeOverlayForConstrainedModels } from "./overlay-policy.js";
 
 export class AnythingLLMConnector implements Connector {
   readonly id = "anythingllm";
@@ -35,6 +36,7 @@ export class AnythingLLMConnector implements Connector {
       return { success: false, target: this.id, message: "Set TRAITMIXER_ANYTHINGLLM_URL, TRAITMIXER_ANYTHINGLLM_API_KEY, and TRAITMIXER_ANYTHINGLLM_WORKSPACE" };
     }
     try {
+      const { changed, overlay: safeOverlay } = sanitizeOverlayForConstrainedModels(overlay);
       const res = await fetch(
         `${this.baseUrl}/api/v1/workspace/${encodeURIComponent(this.workspaceSlug)}/update`,
         {
@@ -43,13 +45,17 @@ export class AnythingLLMConnector implements Connector {
             Authorization: `Bearer ${this.apiKey}`,
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ openAiPrompt: overlay }),
+          body: JSON.stringify({ openAiPrompt: safeOverlay }),
         },
       );
       if (!res.ok) {
         return { success: false, target: this.id, message: `Update failed: ${res.status} ${res.statusText}` };
       }
-      return { success: true, target: this.id, message: `Updated workspace "${this.workspaceSlug}" system prompt` };
+      return {
+        success: true,
+        target: this.id,
+        message: `Updated workspace "${this.workspaceSlug}" system prompt${changed ? " (safety wording adjusted for constrained models)" : ""}`,
+      };
     } catch (err) {
       return { success: false, target: this.id, message: `Request failed: ${(err as Error).message}` };
     }

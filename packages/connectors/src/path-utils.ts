@@ -1,7 +1,7 @@
 import * as path from "node:path";
 
 function configuredBaseDir(): string {
-  return process.env.TRAITMIXER_APP_ROOT || process.cwd();
+  return process.env.TRAITMIXER_APP_ROOT || process.env.INIT_CWD || process.cwd();
 }
 
 export function resolveConfiguredPath(filePath: string): string {
@@ -15,4 +15,3 @@ export function resolveConfiguredPath(filePath: string): string {
 
   return path.resolve(configuredBaseDir(), filePath);
 }
-
